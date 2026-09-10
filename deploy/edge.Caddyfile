@@ -1,0 +1,35 @@
+{
+  admin off
+  auto_https off
+}
+
+:8080 {
+  header {
+    Content-Security-Policy "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self'"
+    Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+  }
+
+  handle /health/* {
+    reverse_proxy api:8000
+  }
+  handle /v1/* {
+    reverse_proxy api:8000
+  }
+  @signerProtocol path /generate-live-payment /sign-orchestrator-info /discover-orchestrators
+  handle @signerProtocol {
+    reverse_proxy remote-signer:8935
+  }
+  redir /admin /admin/ 308
+  handle_path /admin/* {
+    reverse_proxy admin-web:8080
+  }
+  handle_path /signer/* {
+    reverse_proxy remote-signer:8935
+  }
+  handle {
+    reverse_proxy user-web:8080
+  }
+}

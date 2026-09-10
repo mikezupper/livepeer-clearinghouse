@@ -1,0 +1,1433 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "apps/admin-web/src/admin-app.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "AdminApp",
+          "members": [
+            {
+              "kind": "field",
+              "name": "api",
+              "default": "AdminApiLive"
+            },
+            {
+              "kind": "field",
+              "name": "resource",
+              "type": {
+                "text": "ResourceState"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "message",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "saving",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "proposedStop",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "providers",
+              "type": {
+                "text": "ReadonlyArray<\"email\" | \"google\" | \"github\">"
+              },
+              "privacy": "private",
+              "default": "[\"email\"]"
+            },
+            {
+              "kind": "field",
+              "name": "emailAddress",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "codeRequested",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "invitationSecret",
+              "type": {
+                "text": "string | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "pendingChange",
+              "type": {
+                "text": "PendingChange | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "killDialog",
+              "type": {
+                "text": "HTMLDialogElement | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "changeDialog",
+              "type": {
+                "text": "HTMLDialogElement | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "invitationDialog",
+              "type": {
+                "text": "HTMLDialogElement | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "grantKey",
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "clearInvitation",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "refresh",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "authAction",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "effect",
+                  "type": {
+                    "text": "Effect.Effect<void, AdminFailure>"
+                  }
+                },
+                {
+                  "name": "onSuccess",
+                  "type": {
+                    "text": "() => void"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "loadProviders",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "requestEmailCode",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "verifyEmailCode",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "refreshSession",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "logout",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "submit",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "method",
+                  "type": {
+                    "text": "\"POST\" | \"PUT\" | \"PATCH\" | \"DELETE\""
+                  }
+                },
+                {
+                  "name": "body",
+                  "type": {
+                    "text": "Readonly<Record<string, unknown>>"
+                  }
+                },
+                {
+                  "name": "idempotencyKey",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "onSaved",
+                  "optional": true,
+                  "type": {
+                    "text": "() => void"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "createTenant",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "createAccount",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "createPrincipal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "createGrant",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "createRate",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "updateTenant",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "updateAccount",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "updatePrincipal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "setCapability",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "issueInvitation",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "confirmChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "change",
+                  "type": {
+                    "text": "PendingChange"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "cancelChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "applyConfirmedChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "openKillDialog",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "closeKillDialog",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "confirmKillSwitch",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "table",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "caption",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "headings",
+                  "type": {
+                    "text": "ReadonlyArray<string>"
+                  }
+                },
+                {
+                  "name": "rows",
+                  "type": {
+                    "text": "ReadonlyArray<ReadonlyArray<unknown>>"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "renderOverview",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "Overview"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "renderSignIn",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderControls",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "session",
+                  "type": {
+                    "text": "AuthSession"
+                  }
+                }
+              ]
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "admin-app",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "AdminApp",
+          "declaration": {
+            "name": "AdminApp",
+            "module": "apps/admin-web/src/admin-app.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "admin-app",
+          "declaration": {
+            "name": "AdminApp",
+            "module": "apps/admin-web/src/admin-app.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "apps/user-web/src/user-app.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "UserApp",
+          "members": [
+            {
+              "kind": "field",
+              "name": "auth",
+              "type": {
+                "text": "AuthState"
+              },
+              "privacy": "private",
+              "default": "{ tag: \"checking\" }"
+            },
+            {
+              "kind": "field",
+              "name": "providers",
+              "type": {
+                "text": "readonly Provider[]"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "route",
+              "type": {
+                "text": "Route"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "notice",
+              "type": {
+                "text": "Notice | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "account",
+              "type": {
+                "text": "Account | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "balance",
+              "type": {
+                "text": "Balance | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "credentials",
+              "type": {
+                "text": "readonly Credential[]"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "sessions",
+              "type": {
+                "text": "readonly SignerSessionMetadata[]"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "catalog",
+              "type": {
+                "text": "readonly CatalogEntry[]"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "usage",
+              "type": {
+                "text": "readonly Usage[]"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "charges",
+              "type": {
+                "text": "readonly Charge[]"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "usageCursor",
+              "type": {
+                "text": "string | null | undefined"
+              },
+              "privacy": "private",
+              "default": "undefined"
+            },
+            {
+              "kind": "field",
+              "name": "chargesCursor",
+              "type": {
+                "text": "string | null | undefined"
+              },
+              "privacy": "private",
+              "default": "undefined"
+            },
+            {
+              "kind": "field",
+              "name": "inFlight",
+              "type": {
+                "text": "ReadonlySet<string>"
+              },
+              "privacy": "private",
+              "default": "new Set()"
+            },
+            {
+              "kind": "field",
+              "name": "secret",
+              "type": {
+                "text": "Secret | undefined"
+              },
+              "privacy": "private",
+              "default": "undefined"
+            },
+            {
+              "kind": "field",
+              "name": "pendingCreate",
+              "type": {
+                "text": "PendingCreate | undefined"
+              },
+              "privacy": "private",
+              "default": "undefined"
+            },
+            {
+              "kind": "field",
+              "name": "refreshKeys",
+              "type": {
+                "text": "ReadonlyMap<string, string>"
+              },
+              "privacy": "private",
+              "default": "new Map()"
+            },
+            {
+              "kind": "field",
+              "name": "onPopState",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "run",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "effect",
+                  "type": {
+                    "text": "Effect.Effect<A, UserFailure, UserApi>"
+                  }
+                },
+                {
+                  "name": "success",
+                  "type": {
+                    "text": "(value: A) => void"
+                  }
+                },
+                {
+                  "name": "settled",
+                  "default": "() => undefined",
+                  "type": {
+                    "text": "() => void"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "runCommand",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "command",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "effect",
+                  "type": {
+                    "text": "Effect.Effect<A, UserFailure, UserApi>"
+                  }
+                },
+                {
+                  "name": "success",
+                  "type": {
+                    "text": "(value: A) => void"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "createKey",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "input",
+                  "type": {
+                    "text": "NewSignerSession"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "refreshKey",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "clearRefreshKey",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "fail",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "failure",
+                  "type": {
+                    "text": "UserFailure"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "loadIdentity",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "loadRoute",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "navigate",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "requestCode",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "verifyCode",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "redeem",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "issueCredential",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "createSession",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "loadMore",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "kind",
+                  "type": {
+                    "text": "\"usage\" | \"charges\""
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "handleAction",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "logout",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "showSecret",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "heading",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "value",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "instructions",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "clearSecret",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderNotice",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult | typeof nothing"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderSignIn",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderUnscoped",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "session",
+                  "type": {
+                    "text": "AuthSession"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "renderOverview",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderCredentials",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderSessions",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderCatalog",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderUsage",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderCharges",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderProfile",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "session",
+                  "type": {
+                    "text": "AuthSession"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "renderRoute",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "session",
+                  "type": {
+                    "text": "AuthSession"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "renderNavigation",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "user-app",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "UserApp",
+          "declaration": {
+            "name": "UserApp",
+            "module": "apps/user-web/src/user-app.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "user-app",
+          "declaration": {
+            "name": "UserApp",
+            "module": "apps/user-web/src/user-app.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "packages/ui/src/och-app-shell.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "OchAppShell",
+          "members": [
+            {
+              "kind": "field",
+              "name": "heading",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Open Clearinghouse\"",
+              "attribute": "heading"
+            },
+            {
+              "kind": "field",
+              "name": "summary",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Vendor-neutral walletless Livepeer network spend.\"",
+              "attribute": "summary"
+            },
+            {
+              "kind": "field",
+              "name": "navigationLabel",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Primary\"",
+              "attribute": "navigation-label"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "heading",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Open Clearinghouse\"",
+              "fieldName": "heading"
+            },
+            {
+              "name": "summary",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Vendor-neutral walletless Livepeer network spend.\"",
+              "fieldName": "summary"
+            },
+            {
+              "name": "navigation-label",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Primary\"",
+              "fieldName": "navigationLabel"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "och-app-shell",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "OchAppShell",
+          "declaration": {
+            "name": "OchAppShell",
+            "module": "packages/ui/src/och-app-shell.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "och-app-shell",
+          "declaration": {
+            "name": "OchAppShell",
+            "module": "packages/ui/src/och-app-shell.ts"
+          }
+        }
+      ]
+    }
+  ]
+}

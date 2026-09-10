@@ -1,0 +1,69 @@
+services:
+  restore-postgres:
+    image: postgres:18.6-bookworm@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
+      POSTGRES_DB: clearinghouse_restore
+    secrets:
+      - postgres-password
+    tmpfs:
+      - /var/lib/postgresql:uid=999,gid=999,mode=0700
+    networks:
+      - restore
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d clearinghouse_restore"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+    cap_add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+
+  ops-restore:
+    image: ${CLEARINGHOUSE_OPS_IMAGE:-livepeer/clearinghouse-ops:local}
+    build:
+      context: .
+      dockerfile: deploy/ops/Dockerfile
+    command: ["restore-verify"]
+    environment:
+      CLEARINGHOUSE_SECRET_OWNER_UID: ${CLEARINGHOUSE_SECRET_OWNER_UID:-1000}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
+      POSTGRES_DB: clearinghouse_restore
+      POSTGRES_HOST: restore-postgres
+      POSTGRES_PORT: 5432
+      OPS_RESTORE_ISOLATED: "true"
+    secrets:
+      - postgres-password
+      - age-identity
+    volumes:
+      - encrypted-backups:/backups:ro
+    depends_on:
+      restore-postgres:
+        condition: service_healthy
+    networks:
+      - restore
+    read_only: true
+    tmpfs:
+      - /tmp:uid=10001,gid=10001,mode=0700
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+    cap_add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETPCAP", "SETGID", "SETUID"]
+
+networks:
+  restore:
+    internal: true
+
+volumes:
+  encrypted-backups:
+    external: true
+    name: ${CLEARINGHOUSE_BACKUP_VOLUME:?set CLEARINGHOUSE_BACKUP_VOLUME}
+
+secrets:
+  postgres-password:
+    file: ${POSTGRES_PASSWORD_HOST_FILE:?set POSTGRES_PASSWORD_HOST_FILE}
+  age-identity:
+    file: ${CLEARINGHOUSE_BACKUP_AGE_IDENTITY_HOST_FILE:?set CLEARINGHOUSE_BACKUP_AGE_IDENTITY_HOST_FILE}

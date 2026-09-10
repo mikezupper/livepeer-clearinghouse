@@ -1,0 +1,17 @@
+{
+  "name": "@livepeer/clearinghouse-platform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage && npm --prefix ../.. run coverage:denominators -- platform"
+  },
+  "dependencies": {
+    "@effect/platform": "0.97.2",
+    "@livepeer/clearinghouse-contracts": "0.0.0",
+    "effect": "3.22.2"
+  }
+}

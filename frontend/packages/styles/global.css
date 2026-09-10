@@ -1,0 +1,229 @@
+@layer reset, tokens, base, layout, components, utilities;
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    margin: 0;
+  }
+
+  html {
+    min-block-size: 100%;
+  }
+
+  body {
+    min-block-size: 100dvh;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer tokens {
+  :root {
+    color-scheme: light dark;
+
+    --och-hue: 252;
+    --och-color-brand: oklch(58% 0.2 var(--och-hue));
+    --och-color-brand-hover: oklch(
+      from var(--och-color-brand) calc(l - 0.07) c h
+    );
+    --och-color-surface: light-dark(
+      oklch(99% 0.006 var(--och-hue)),
+      oklch(18% 0.016 var(--och-hue))
+    );
+    --och-color-surface-raised: light-dark(
+      oklch(100% 0 0deg),
+      oklch(23% 0.02 var(--och-hue))
+    );
+    --och-color-text: light-dark(
+      oklch(22% 0.02 var(--och-hue)),
+      oklch(94% 0.01 var(--och-hue))
+    );
+    --och-color-text-muted: color-mix(
+      in oklch,
+      var(--och-color-text) 64%,
+      var(--och-color-surface)
+    );
+    --och-color-border: color-mix(
+      in oklch,
+      var(--och-color-text) 16%,
+      var(--och-color-surface)
+    );
+    --och-font-sans: ui-sans-serif, system-ui, sans-serif;
+    --och-font-size-0: clamp(1rem, 0.95rem + 0.2vw, 1.125rem);
+    --och-font-size-1: clamp(1.25rem, 1.08rem + 0.65vw, 1.625rem);
+    --och-font-size-2: clamp(1.625rem, 1.3rem + 1.25vw, 2.375rem);
+    --och-space-1: 0.5rem;
+    --och-space-2: 0.75rem;
+    --och-space-3: clamp(1rem, 0.75rem + 1vw, 1.5rem);
+    --och-space-4: clamp(1.5rem, 1rem + 2vw, 3rem);
+    --och-radius: 0.75rem;
+    --och-shadow:
+      0 1px 2px oklch(20% 0.02 var(--och-hue) / 8%),
+      0 8px 24px oklch(20% 0.02 var(--och-hue) / 10%);
+    --och-content-max: 72rem;
+  }
+
+  @property --och-hue {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 252;
+  }
+
+  [data-theme="light"] {
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  body {
+    background: var(--och-color-surface);
+    color: var(--och-color-text);
+    font-family: var(--och-font-sans);
+    font-size: var(--och-font-size-0);
+    line-height: 1.5;
+    scrollbar-gutter: stable;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :where(h1, h2, h3) {
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  :where(p, li, figcaption) {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 0.15rem solid var(--och-color-brand);
+    outline-offset: 0.15rem;
+  }
+
+  ::selection {
+    background: var(--och-color-brand);
+    color: var(--och-color-surface);
+  }
+
+  a {
+    color: var(--och-color-brand);
+    text-decoration-skip-ink: all;
+    text-underline-offset: 0.15em;
+  }
+}
+
+@layer layout {
+  :where(admin-app, user-app) {
+    display: block;
+    min-block-size: 100dvh;
+  }
+
+  :where(admin-app, user-app)::part(header),
+  :where(admin-app, user-app)::part(main),
+  :where(admin-app, user-app)::part(footer) {
+    padding-inline: max(var(--och-space-3), env(safe-area-inset-left));
+  }
+
+  :where(admin-app, user-app)::part(header) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--och-space-3);
+    padding-block: var(--och-space-2);
+    border-block-end: 1px solid var(--och-color-border);
+  }
+
+  :where(admin-app, user-app)::part(main) {
+    inline-size: min(100%, var(--och-content-max));
+    min-block-size: calc(100dvh - 9rem);
+    margin-inline: auto;
+    padding-block: var(--och-space-4);
+  }
+
+  :where(admin-app, user-app)::part(footer) {
+    padding-block: var(--och-space-3);
+    border-block-start: 1px solid var(--och-color-border);
+  }
+}
+
+@layer components {
+  :where(admin-app, user-app)::part(skip-link) {
+    position: fixed;
+    inset-block-start: var(--och-space-1);
+    inset-inline-start: var(--och-space-1);
+    z-index: 1;
+    padding: var(--och-space-1) var(--och-space-2);
+    translate: 0 -200%;
+    background: var(--och-color-surface-raised);
+    border-radius: var(--och-radius);
+    box-shadow: var(--och-shadow);
+  }
+
+  :where(admin-app, user-app)::part(skip-link):focus {
+    translate: 0;
+  }
+
+  :where(admin-app, user-app)::part(brand) {
+    font-weight: 700;
+  }
+
+  :where(admin-app, user-app)::part(summary),
+  :where(admin-app, user-app)::part(footer-note) {
+    color: var(--och-color-text-muted);
+  }
+
+  :where(admin-app, user-app)::part(title) {
+    font-size: var(--och-font-size-2);
+  }
+
+  :where(admin-app, user-app)::part(navigation-list) {
+    display: flex;
+    gap: var(--och-space-2);
+    padding: 0;
+    list-style: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --och-color-border: currentcolor;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  :where(admin-app, user-app)::part(skip-link) {
+    transition: translate 180ms ease-out;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(admin-app, user-app)::part(skip-link) {
+    border: 1px solid CanvasText;
+  }
+}

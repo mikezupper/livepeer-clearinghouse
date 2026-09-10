@@ -1,0 +1,11 @@
+{
+  "name": "@livepeer/clearinghouse-styles",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./global.css": {
+      "types": "./global.d.ts",
+      "default": "./global.css"
+    }
+  }
+}

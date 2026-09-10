@@ -1,0 +1,56 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Open Clearinghouse signer event input",
+    "version": "1.0.0",
+    "description": "Kafka-compatible mixed GatewayEvent topic consumed from the pinned go-livepeer remote signer. The configured topic/ACL binds one signer identity; payload gateway metadata is not identity. The message key is the canonical envelope UUID. The walking-slice topic uses delete retention, is not compacted, and is non-transactional. Unrelated event types are ignored; create_signed_ticket is decoded and normalized before domain use."
+  },
+  "defaultContentType": "application/json",
+  "servers": {
+    "reference": {
+      "host": "redpanda:9092",
+      "protocol": "kafka",
+      "description": "Private reference Compose network"
+    }
+  },
+  "channels": {
+    "signerEvents": {
+      "address": "{signerEventsTopic}",
+      "description": "Dedicated signer stream. Provision with cleanup.policy=delete and without transactional producers; the Kafka key must equal the envelope UUID.",
+      "parameters": {
+        "signerEventsTopic": {"description": "Configured go-livepeer monitoring topic"}
+      },
+      "messages": {
+        "gatewayEvent": {"$ref": "#/components/messages/gatewayEvent"}
+      }
+    }
+  },
+  "operations": {
+    "receiveSignerEvents": {
+      "action": "receive",
+      "channel": {"$ref": "#/channels/signerEvents"},
+      "messages": [{"$ref": "#/channels/signerEvents/messages/gatewayEvent"}]
+    }
+  },
+  "components": {
+    "messages": {
+      "gatewayEvent": {
+        "name": "goLivepeerGatewayEvent",
+        "title": "Raw mixed-topic GatewayEvent",
+        "summary": "Envelope shared by create_signed_ticket and unrelated go-livepeer monitoring events",
+        "description": "Kafka message key is the canonical lowercase UUID string in payload.id. The configured topic and ACL, not gateway metadata, establish signer identity.",
+        "correlationId": {
+          "description": "Canonical transport event UUID; producers MUST use this same value as the Kafka message key.",
+          "location": "$message.payload#/id"
+        },
+        "payload": {"$ref": "./events/v1/go-livepeer-gateway-event.schema.json"}
+      },
+      "createSignedTicket": {
+        "name": "goLivepeerCreateSignedTicketV1",
+        "title": "Raw create_signed_ticket",
+        "summary": "Successful signed request containing one to 100 tickets",
+        "payload": {"$ref": "./events/v1/go-livepeer-create-signed-ticket.schema.json"}
+      }
+    }
+  }
+}

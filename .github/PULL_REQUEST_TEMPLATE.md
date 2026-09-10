@@ -1,53 +1,25 @@
-<!--
-Thanks for contributing to the Livepeer clearinghouse / builder-sdk!
-Keep the description focused. PRs that are not filled out may be flagged
-`need: more info`. Rebase on the default branch before requesting review.
--->
+## Motivation and outcome
 
-## What does this PR do?
+<!-- Explain the problem and the observable result. -->
 
-<!-- A short summary of the change and the motivation behind it. -->
+## Scope
 
-Closes #<!-- issue number -->
+<!-- Name the affected backend, frontend, contract, deployment, or docs area. -->
 
-## Type of change
+Beads work: <!-- ID or "maintainer to link during triage" -->
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Refactor / tech debt
-- [ ] Documentation
-- [ ] CI / tooling
+## Validation
 
-## Affected component(s)
+<!-- List the exact commands and relevant manual checks that passed. -->
 
-- [ ] builder-sdk (core)
-- [ ] Signer proxy
-- [ ] Usage API / helper methods
-- [ ] Kafka collection endpoint
-- [ ] Storage / SQL schema
-- [ ] Docker container
-- [ ] OIDC / auth (pymthouse)
+## Risk and operations
 
-## Integration mode
+<!-- Describe security, migration, rollback, compatibility, and deployment impact. -->
 
-- [ ] Hosted
-- [ ] On-prem / self-hosted
-- [ ] Both / N/A
+## Documentation and contracts
 
-## How was this tested?
+<!-- Name updated docs/contracts, or explain why no update is needed. -->
 
-<!-- Describe tests added or run. Include commands and relevant output. -->
+## Reviewer notes
 
-## Checklist
-
-- [ ] My branch is rebased on the latest default branch
-- [ ] I added/updated tests covering my change
-- [ ] I updated documentation (README / docs) where relevant
-- [ ] I updated `CHANGELOG_PENDING.md` if this is a user-facing change
-- [ ] No new required dependencies were introduced (or they are justified below)
-- [ ] Secrets, signer keys, and client IDs are not committed
-
-## Notes for reviewers
-
-<!-- Anything reviewers should pay special attention to, follow-ups, or known gaps. -->
+<!-- Call out decisions, generated diffs, or areas needing special attention. -->

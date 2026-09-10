@@ -1,0 +1,48 @@
+name: Feature proposal
+description: Propose a scoped change to clearinghouse behavior or operations.
+title: "proposal: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the need before prescribing an implementation. GitHub Issues are public intake; maintainers track accepted implementation work in Beads.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and users
+      description: Who is affected, what they need to accomplish, and why existing behavior is insufficient.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: State observable acceptance criteria without a task checklist.
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed approach
+      description: Include alternatives considered and relevant architecture or contract impact.
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Security and operational impact
+      description: Address tenant isolation, custody, metering, migrations, compatibility, and deployment where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting evidence
+      description: Link non-sensitive examples, measurements, or related public discussion.
+  - type: checkboxes
+    id: conduct
+    attributes:
+      label: Community agreement
+      options:
+        - label: I will follow the repository Code of Conduct and have not included confidential information.
+          required: true

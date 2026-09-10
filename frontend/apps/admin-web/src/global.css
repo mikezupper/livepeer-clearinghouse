@@ -1,0 +1,60 @@
+@layer admin-layout, admin-components;
+
+@layer admin-layout {
+  admin-app {
+    --admin-border-width: 1px;
+    --admin-card-border: var(--och-color-border);
+    --admin-control-size: 2.75rem;
+    --admin-metric-weight: 700;
+    --admin-motion-duration: 160ms;
+    --admin-textarea-size: 5lh;
+  }
+
+  admin-app::part(section) {
+    container-type: inline-size;
+  }
+
+  admin-app::part(table-scroll) {
+    display: block;
+    overflow-inline: auto;
+  }
+}
+
+@layer admin-components {
+  admin-app::part(metric),
+  admin-app::part(form-card) {
+    border-color: var(--admin-card-border);
+  }
+
+  admin-app::part(mutation-status) {
+    min-block-size: 1.5lh;
+    color: var(--och-color-text-muted);
+  }
+
+  admin-app::part(dialog) {
+    max-inline-size: min(36rem, calc(100% - 2 * var(--och-space-3)));
+    padding: var(--och-space-3);
+    color: var(--och-color-text);
+    background: var(--och-color-surface-raised);
+    border: var(--admin-border-width) solid var(--och-color-border);
+    border-radius: var(--och-radius);
+  }
+
+  admin-app::part(dialog)::backdrop {
+    background: oklch(10% 0.02 var(--och-hue) / 72%);
+    backdrop-filter: blur(0.25rem);
+  }
+}
+
+@media (forced-colors: active) {
+  admin-app::part(form-card),
+  admin-app::part(dialog) {
+    border: 1px solid CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  admin-app {
+    --admin-motion-duration: 0ms;
+  }
+}

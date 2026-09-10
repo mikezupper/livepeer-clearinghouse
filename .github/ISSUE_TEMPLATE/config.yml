@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability privately
+    url: https://github.com/livepeer/clearinghouse/security/advisories/new
+    about: Never disclose a suspected vulnerability in a public issue.
+  - name: Ask an operator or architecture question
+    url: https://forum.livepeer.org/
+    about: Use the Livepeer Forum for support and design discussion.
+  - name: Join the Livepeer community
+    url: https://discord.gg/55SZFEEH5y
+    about: Use Discord for community conversation, not sensitive reports.
+  - name: Read the project documentation
+    url: https://github.com/livepeer/clearinghouse/blob/main/docs/index.md
+    about: Start with the canonical documentation and operations runbooks.

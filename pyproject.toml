@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "livepeer-clearinghouse"
+version = "0.1.0"
+description = "Vendor-neutral walletless spend clearinghouse for Livepeer"
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+license = "MIT"
+authors = [{ name = "Livepeer" }]
+dependencies = [
+  "aiokafka==0.14.0",
+  "alembic==1.19.2",
+  "asyncpg==0.31.0",
+  "authlib==1.8.0",
+  "email-validator==2.3.0",
+  "fastapi==0.141.1",
+  "httpx==0.28.1",
+  "httpx2==2.12.0",
+  "joserfc==1.7.5",
+  "opentelemetry-api==1.44.0",
+  "opentelemetry-exporter-otlp-proto-http==1.44.0",
+  "opentelemetry-instrumentation-fastapi==0.65b0",
+  "opentelemetry-instrumentation-logging==0.65b0",
+  "opentelemetry-instrumentation-sqlalchemy==0.65b0",
+  "opentelemetry-sdk==1.44.0",
+  "pydantic==2.13.5",
+  "pydantic-settings==2.15.0",
+  "resend==2.43.0",
+  "sqlalchemy[asyncio]==2.0.52",
+  "structlog==26.1.0",
+  "uvicorn[standard]==0.52.4",
+]
+
+[dependency-groups]
+dev = [
+  "mypy==2.3.1",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "pytest-cov==7.1.0",
+  "pyyaml==6.0.3",
+  "ruff==0.16.6",
+  "types-pyyaml>=6.0.12.20260906",
+]
+
+[project.scripts]
+clearinghouse = "clearinghouse.main:run"
+clearinghouse-metering = "clearinghouse.metering_worker:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend/src/clearinghouse"]
+
+[tool.uv]
+required-version = ">=0.12.12"
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+asyncio_mode = "auto"
+pythonpath = [".", "backend/src"]
+testpaths = ["backend/tests", "tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["clearinghouse"]
+
+[tool.coverage.report]
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+  "raise NotImplementedError",
+]
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+src = ["backend/src", "backend/tests"]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["ASYNC", "B", "E", "F", "I", "LOG", "S", "SIM", "UP"]
+ignore = ["COM812"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/**/*.py" = ["S101", "S311"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["backend/src", "backend/tests"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = "asyncpg.*"
+ignore_missing_imports = true

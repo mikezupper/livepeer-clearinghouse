@@ -1,0 +1,60 @@
+{
+  "name": "@livepeer/clearinghouse-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@12.0.2",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run check:static && npm run test:coverage && npm run coverage:denominators && npm run build",
+    "check:static": "npm run format:check && npm run lint && npm run lint:css && npm run lint:lit && npm run policy && npm run manifest:check && npm run test:gates && npm run typecheck",
+    "coverage:denominators": "node scripts/check-coverage-denominators.mjs",
+    "format:check": "prettier --check \"apps/**/*.css\" \"packages/**/*.css\"",
+    "format:css": "prettier --write \"apps/**/*.css\" \"packages/**/*.css\"",
+    "lint": "eslint \"apps/*/src/**/*.ts\" \"packages/*/src/**/*.ts\" \"e2e/**/*.ts\"",
+    "lint:css": "stylelint \"apps/**/*.css\" \"packages/**/*.css\"",
+    "lint:lit": "lit-analyzer \"apps/*/src/**/*.ts\" \"packages/ui/src/**/*.ts\" --strict --maxWarnings 0",
+    "manifest:check": "node scripts/check-custom-elements.mjs",
+    "manifest:generate": "node scripts/generate-custom-elements.mjs",
+    "policy": "node scripts/check-source.mjs && node scripts/check-semantic-html.mjs",
+    "test": "npm run test --workspaces --if-present",
+    "test:gates": "node --test scripts/*.test.mjs",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
+    "test:e2e": "playwright test --project=chromium-journeys",
+    "test:smoke": "playwright test --project=firefox-smoke --project=webkit-smoke",
+    "test:accessibility": "playwright test --project=chromium-accessibility",
+    "test:browsers": "playwright test",
+    "typecheck": "tsc --noEmit --pretty false && tsc -p e2e/tsconfig.json --noEmit --pretty false"
+  },
+  "devDependencies": {
+    "@custom-elements-manifest/analyzer": "0.11.0",
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.2",
+    "@effect/language-service": "0.87.2",
+    "@eslint/js": "10.0.1",
+    "@vitest/browser": "5.0.0",
+    "@vitest/browser-playwright": "5.0.0",
+    "@vitest/coverage-v8": "5.0.0",
+    "eslint": "10.10.0",
+    "eslint-plugin-lit": "2.3.1",
+    "eslint-plugin-wc": "3.1.0",
+    "lit-analyzer": "2.0.3",
+    "playwright": "1.63.0",
+    "prettier": "3.9.6",
+    "stylelint": "17.15.0",
+    "stylelint-config-standard": "40.0.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
+  },
+  "customElements": "custom-elements.json"
+}

@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clearinghouse.livepeer.org/contracts/events/v1/usage-event.schema.json",
+  "title": "Open Clearinghouse canonical usage event v1",
+  "description": "A normalized, immutable billable event. Values that can exceed interoperable JSON integer precision are decimal strings; rates are exact rationals.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "reservation_id",
+    "lease_id",
+    "tenant_id",
+    "account_id",
+    "principal_id",
+    "capability",
+    "quantity",
+    "price_snapshot",
+    "producer",
+    "occurred_at",
+    "source"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "event_id": {
+      "$ref": "#/$defs/opaqueId"
+    },
+    "reservation_id": {
+      "description": "The synchronous authorization receipt whose pending reservation this event settles.",
+      "$ref": "#/$defs/opaqueId"
+    },
+    "lease_id": {
+      "$ref": "#/$defs/opaqueId"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/opaqueId"
+    },
+    "account_id": {
+      "$ref": "#/$defs/opaqueId"
+    },
+    "principal_id": {
+      "$ref": "#/$defs/opaqueId"
+    },
+    "job_id": {
+      "$ref": "#/$defs/opaqueId"
+    },
+    "manifest_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "capability": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "quantity": {
+      "$ref": "#/$defs/quantity"
+    },
+    "price_snapshot": {
+      "$ref": "#/$defs/priceSnapshot"
+    },
+    "producer": {
+      "$ref": "#/$defs/producer"
+    },
+    "occurred_at": {
+      "description": "Normalized UTC rendering of source.signed_current_time. The signed value, not the unsigned GatewayEvent timestamp or broker receive time, is authoritative.",
+      "type": "string",
+      "format": "date-time",
+      "examples": ["2026-09-10T00:00:00.000000001Z"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "event_id",
+        "confirmation",
+        "signed_current_time",
+        "signed_current_time_unix_ns"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "go_livepeer_create_signed_ticket",
+            "signer_sequence_reconciliation",
+            "direct"
+          ]
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sequence_number": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$"
+        },
+        "confirmation": {
+          "type": "string",
+          "enum": ["kafka", "subsequent_signed_state", "direct"]
+        },
+        "signed_current_time": {
+          "description": "Exact RFC3339Nano occurrence from create_signed_ticket data.current_time, retained without microsecond truncation.",
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?Z$",
+          "examples": ["2026-09-10T00:00:00.000000001Z"]
+        },
+        "signed_current_time_unix_ns": {
+          "description": "Exact signed epoch-nanosecond value parsed from signed_current_time, encoded as a decimal string.",
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*|-[1-9][0-9]*)$",
+          "maxLength": 20
+        },
+        "ticket_count": {
+          "type": "string",
+          "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "opaqueId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,31}_[A-Za-z0-9_-]{8,128}$"
+    },
+    "unsignedIntegerString": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "positiveIntegerString": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$"
+    },
+    "quantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "unit"],
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/positiveIntegerString"
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["fixed", "seconds", "pixels", "720p-pixel-seconds", "wei"]
+        }
+      }
+    },
+    "priceSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rate_numerator",
+        "rate_denominator",
+        "charge_unit",
+        "quantity_unit",
+        "source",
+        "source_version"
+      ],
+      "properties": {
+        "rate_numerator": {
+          "description": "Charge units in the exact rational rate.",
+          "$ref": "#/$defs/unsignedIntegerString"
+        },
+        "rate_denominator": {
+          "description": "Quantity units in the exact rational rate; never zero.",
+          "$ref": "#/$defs/positiveIntegerString"
+        },
+        "charge_unit": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,31}$"
+        },
+        "quantity_unit": {
+          "type": "string",
+          "enum": ["fixed", "seconds", "pixels", "720p-pixel-seconds", "wei"]
+        },
+        "source": {
+          "type": "string",
+          "enum": ["rate_card", "signer"]
+        },
+        "source_id": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "source_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "software", "software_version"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["signer", "collector"]
+        },
+        "software": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "software_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    }
+  }
+}

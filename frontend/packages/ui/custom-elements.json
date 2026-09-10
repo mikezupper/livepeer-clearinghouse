@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "packages/ui/src/och-app-shell.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "OchAppShell",
+          "members": [
+            {
+              "kind": "field",
+              "name": "heading",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Open Clearinghouse\"",
+              "attribute": "heading"
+            },
+            {
+              "kind": "field",
+              "name": "summary",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Vendor-neutral walletless Livepeer network spend.\"",
+              "attribute": "summary"
+            },
+            {
+              "kind": "field",
+              "name": "navigationLabel",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Primary\"",
+              "attribute": "navigation-label"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "heading",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Open Clearinghouse\"",
+              "fieldName": "heading"
+            },
+            {
+              "name": "summary",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Vendor-neutral walletless Livepeer network spend.\"",
+              "fieldName": "summary"
+            },
+            {
+              "name": "navigation-label",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Primary\"",
+              "fieldName": "navigationLabel"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "och-app-shell",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "OchAppShell",
+          "declaration": {
+            "name": "OchAppShell",
+            "module": "packages/ui/src/och-app-shell.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "och-app-shell",
+          "declaration": {
+            "name": "OchAppShell",
+            "module": "packages/ui/src/och-app-shell.ts"
+          }
+        }
+      ]
+    }
+  ]
+}

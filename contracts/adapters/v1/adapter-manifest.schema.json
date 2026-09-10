@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clearinghouse.livepeer.org/contracts/adapters/v1/adapter-manifest.schema.json",
+  "title": "Open Clearinghouse adapter manifest v1",
+  "description": "Startup-validated declaration for a trusted built-in, immutable Python entry-point, or authenticated HTTP bridge adapter.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_version",
+    "name",
+    "version",
+    "source",
+    "ports"
+  ],
+  "properties": {
+    "manifest_version": {
+      "const": "1.0"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "version": {
+      "$ref": "#/$defs/semanticVersion"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1024
+    },
+    "source": {
+      "type": "string",
+      "enum": ["builtin", "python_entry_point", "http_bridge"]
+    },
+    "builtin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selector"],
+      "properties": {
+        "selector": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$",
+          "maxLength": 128
+        }
+      }
+    },
+    "python_entry_point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["group", "name"],
+      "properties": {
+        "group": {
+          "const": "livepeer.clearinghouse.adapters.v1"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]{1,128}$"
+        },
+        "distribution": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]{1,128}$"
+        }
+      }
+    },
+    "http_bridge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_url", "authentication", "timeout_ms"],
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://",
+          "maxLength": 2048
+        },
+        "authentication": {
+          "type": "string",
+          "enum": ["bearer", "mtls"]
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60000
+        }
+      }
+    },
+    "ports": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "items": {
+        "$ref": "#/$defs/port"
+      }
+    },
+    "configuration_schema": {
+      "description": "Optional JSON Schema for non-secret adapter settings. Secrets are referenced by environment variable name, never embedded in a manifest.",
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"source": {"const": "builtin"}},
+        "required": ["source"]
+      },
+      "then": {
+        "required": ["builtin"],
+        "not": {"anyOf": [{"required": ["python_entry_point"]}, {"required": ["http_bridge"]}]}
+      }
+    },
+    {
+      "if": {
+        "properties": {"source": {"const": "python_entry_point"}},
+        "required": ["source"]
+      },
+      "then": {
+        "required": ["python_entry_point"],
+        "not": {"anyOf": [{"required": ["builtin"]}, {"required": ["http_bridge"]}]}
+      }
+    },
+    {
+      "if": {
+        "properties": {"source": {"const": "http_bridge"}},
+        "required": ["source"]
+      },
+      "then": {
+        "required": ["http_bridge"],
+        "not": {"anyOf": [{"required": ["builtin"]}, {"required": ["python_entry_point"]}]}
+      }
+    }
+  ],
+  "$defs": {
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "port": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "contract_version", "capabilities"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": ["identity", "signer", "custody", "metering", "pricing", "collection", "events_out"]
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*\\.[0-9]+$"
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+            "maxLength": 128
+          }
+        }
+      }
+    }
+  }
+}
