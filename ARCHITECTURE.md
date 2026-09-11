@@ -70,9 +70,9 @@ on container loopback and is not proxied.
                     Resend/OAuth      chain RPC
                          ▲                ▲
                          │                │
-host loopback -> edge -> API          remote-signer
-                 │       │                 │
-              app network│                 │
+host loopback -> ingress -> edge -> API    remote-signer
+                            │       │             │
+                         app network│             │
                          │                 │
                   database network   broker network
                          │                 │
@@ -81,9 +81,12 @@ host loopback -> edge -> API          remote-signer
                          └──── consumer <─┘
 ```
 
-The `database` and `broker` networks are Docker-internal. The edge cannot reach
-either. Redpanda is not attached to the browser application network. API and
-signer egress exists for their external provider/RPC responsibilities. Directly
+The `database`, `broker`, and `app` networks are Docker-internal. A dedicated
+non-internal `ingress` network is attached only to the edge so rootless Docker
+can publish its loopback-bound port; no upstream application service is
+reachable on that network. The edge cannot reach the database or broker.
+Redpanda is not attached to the browser application network. API and signer
+egress exists for their external provider/RPC responsibilities. Directly
 publishing the API, database, broker, or signer admin port changes this threat
 model and requires a new ingress and network review.
 

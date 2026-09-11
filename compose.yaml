@@ -338,9 +338,11 @@ services:
   signer-volume-init:
     <<: *backend-service
     user: "0:0"
-    command: ["sh", "-c", "chown 10001:10001 /data"]
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chown 10001:10001 /data"]
     cap_add:
       - CHOWN
+    secrets: []
     volumes:
       - signer-data:/data
     networks:
@@ -366,6 +368,7 @@ services:
       SIGNER_DATA_DIR: /data
       SIGNER_PORT: 8935
       SIGNER_REMOTE_DISCOVERY: ${SIGNER_REMOTE_DISCOVERY:-true}
+      SIGNER_ORCH_ADDR: ${SIGNER_ORCH_ADDR:-}
       REMOTE_SIGNER_WEBHOOK_URL: ${CLEARINGHOUSE_REMOTE_SIGNER_WEBHOOK_URL_INTERNAL:-http://api:8000/v1/compat/go-livepeer/authorize}
       WEBHOOK_SECRET_FILE: /run/secrets/signer-webhook-secret
       KAFKA_BROKERS: ${CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS_INTERNAL:-redpanda:9092}
@@ -419,9 +422,9 @@ services:
           "--reuid=10001",
           "--regid=10001",
           "--clear-groups",
-          "--inh-caps=-all",
-          "--ambient-caps=-all",
-          "--bounding-set=-all",
+          "--inh-caps=-chown,-dac_override,-setpcap,-setgid,-setuid",
+          "--ambient-caps=-chown,-dac_override,-setpcap,-setgid,-setuid",
+          "--bounding-set=-chown,-dac_override,-setpcap,-setgid,-setuid",
           "--no-new-privs",
           "/usr/bin/bash",
           "-ec",
@@ -458,6 +461,8 @@ services:
       SIGNER_MIN_GAS_WEI: ${SIGNER_MIN_GAS_WEI:-}
       SIGNER_MIN_DEPOSIT_WEI: ${SIGNER_MIN_DEPOSIT_WEI:-}
       SIGNER_MIN_RESERVE_WEI: ${SIGNER_MIN_RESERVE_WEI:-}
+      SIGNER_REMOTE_DISCOVERY: ${SIGNER_REMOTE_DISCOVERY:-true}
+      SIGNER_ORCH_ADDR: ${SIGNER_ORCH_ADDR:-}
       REMOTE_SIGNER_WEBHOOK_URL: ${CLEARINGHOUSE_REMOTE_SIGNER_WEBHOOK_URL_INTERNAL:-http://api:8000/v1/compat/go-livepeer/authorize}
       WEBHOOK_SECRET_FILE: /run/secrets/signer-webhook-secret
       KAFKA_BROKERS: ${CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS_INTERNAL:-redpanda:9092}
@@ -555,7 +560,9 @@ services:
       user-web:
         condition: service_healthy
     networks:
-      - app
+      app: {}
+      ingress:
+        gw_priority: 1
     read_only: true
     tmpfs:
       - /config:uid=10001,gid=10001
@@ -694,6 +701,7 @@ networks:
     internal: true
   app:
     internal: true
+  ingress: {}
   egress: {}
   observability:
     internal: true

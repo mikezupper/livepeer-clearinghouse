@@ -50,7 +50,7 @@ Do not shell-source arbitrary `.env` contents.
 | `SIGNER_NETWORK` | `arbitrum-one-mainnet`, or `custom` for evaluation |
 | `SIGNER_CHAIN_ID` | `42161` for Arbitrum One; explicit positive ID for custom chains |
 | `SIGNER_CONTROLLER` | `0xD8E8328501E9645d16Cf49539efC04f734606ee4` for the pinned Arbitrum configuration; explicit deployed contract for custom chains |
-| `ETH_RPC_URL` | Credential-free HTTP(S) RPC, root or `/rpc` path; no userinfo, query, or fragment |
+| `ETH_RPC_URL` | HTTP(S) RPC; custom provider paths and query credentials are accepted, while URL userinfo and fragments remain invalid |
 | `SIGNER_ETH_ADDR` | Nonzero address matching the V3 encrypted keyfile |
 | `SIGNER_KEYSTORE_HOST_FILE` | Existing host encrypted Ethereum V3 JSON file; never a plaintext private key |
 | `SIGNER_PASSWORD_HOST_FILE` | Separate nonempty password file, readable by runtime UID/GID; mode `0400`, `0440`, `0600`, or `0640` |
@@ -58,7 +58,8 @@ Do not shell-source arbitrary `.env` contents.
 | `SIGNER_PASSWORD_FILE` | Container password path, normally `/run/secrets/signer-password` |
 | `SIGNER_DATA_DIR` | Writable persistent directory `/data`, owned by UID/GID `10001` |
 | `SIGNER_PORT` / `SIGNER_HOST_PORT` | Container signing port `8935`; optional loopback host port `18935` |
-| `SIGNER_REMOTE_DISCOVERY` | `true` to enable upstream orchestrator discovery; `false` when catalog/discovery is supplied elsewhere |
+| `SIGNER_REMOTE_DISCOVERY` | `true` to expose upstream `/discover-orchestrators`; `false` when every gateway receives discovery elsewhere |
+| `SIGNER_ORCH_ADDR` | Optional comma-separated static orchestrator service addresses (for example, `https://orch-a.example:8935,https://orch-b.example:8935`); requires `SIGNER_REMOTE_DISCOVERY=true`, explicit ports, and HTTPS in production |
 | `REMOTE_SIGNER_WEBHOOK_URL` | `/v1/compat/go-livepeer/authorize` on the private clearinghouse API |
 | `WEBHOOK_SECRET` | Independently generated shared service credential, at least 32 URL-safe characters; must match API configuration |
 | `KAFKA_BROKERS` | One reachable `hostname:port`, normally `redpanda:9092`; this upstream constructor accepts one bootstrap address |
@@ -66,12 +67,28 @@ Do not shell-source arbitrary `.env` contents.
 | `LP_KAFKAUSER` / `LP_KAFKAPASSWORD_HOST_FILE` | Both absent for private local Redpanda, or a username plus protected password file for upstream's SASL/PLAIN + TLS mode |
 | `SIGNER_MIN_GAS_WEI`, `SIGNER_MIN_DEPOSIT_WEI`, `SIGNER_MIN_RESERVE_WEI` | Positive operator-selected integer readiness thresholds; no universal funding amount is assumed |
 
-Mount the individual encrypted keyfile and password read-only. The keyfile
-option makes go-livepeer use its parent directory; mount that directory so the
-selected key remains accessible, and never put unrelated keys there. Keep
-runtime state separately writable under `/data`. The container starts a fixed,
-root-owned entrypoint only long enough to read exact protected mounts and copy
-custody inputs into a container-local tmpfs. It then permanently drops its
+`SIGNER_REMOTE_DISCOVERY=true` controls whether the signer exposes its discovery
+endpoint; it does not require on-chain discovery. When `SIGNER_ORCH_ADDR` is
+nonempty, the pinned upstream signer uses that static list instead of its
+on-chain candidate source and periodically refreshes capabilities and pricing
+from only those orchestrators. Entries are service endpoints, not Ethereum
+addresses. DNS names and IPv4 addresses are supported by this deployment
+wrapper; specify an explicit port, omit whitespace, and do not include paths,
+credentials, queries, or fragments.
+
+Alternatively, set `SIGNER_REMOTE_DISCOVERY=false` and configure `-orchAddr`
+directly on every separately operated gateway. The reference Compose stack does
+not include a gateway process, so that gateway-side setting is outside this
+repository's `.env` contract.
+
+Mount the individual encrypted keyfile and password read-only. The wrapper
+validates exactly that keyfile, copies it alone into a private tmpfs directory,
+and passes the isolated directory to go-livepeer. This avoids the pinned
+binary's incorrect keyfile-path fallback to `/data/keystore`, where it would
+create a different account. Never place unrelated keys in the signer tmpfs.
+Keep runtime state separately writable under `/data`. The container starts a
+fixed, root-owned entrypoint only long enough to read exact protected mounts
+and copy custody inputs into a container-local tmpfs. It then permanently drops its
 identity, groups, capability sets, and privilege-gain ability before replacing
 PID 1 with go-livepeer as numeric UID/GID `10001`; provision `/data` ownership
 before startup. A password that
@@ -84,20 +101,24 @@ Use Compose secrets or read-only bind mounts, not Dockerfile `ARG`, `ENV`,
 files, passwords, and `/data` outside version control. Back up the encrypted
 key and data independently; store the password separately from that backup.
 
-## RPC URL logging boundary
+## RPC URL logging boundary and accepted risk
 
 The pinned upstream binary unconditionally prints its configuration at
 startup. It redacts `EthPassword`, `KafkaPassword`, and webhook headers, but
 **does not redact `EthUrl`**. Moving a provider key from argv to an environment
-variable does not prevent this logging. Therefore the wrapper/preflight reject
-credential-bearing URLs and arbitrary paths that commonly embed provider keys.
+variable does not prevent this logging. At the project owner's explicit
+direction, the clearinghouse accepts custom RPC paths and query credentials so
+the reference stack can use provider URLs directly. The wrapper emits a generic
+warning without repeating the value, but upstream logs may expose the complete
+URL to anyone with container-log access.
 
-For an authenticated RPC provider, give the signer a credential-free private
-relay endpoint such as `http://rpc-relay:8545/`. The operator-managed relay
-injects the provider credential from its own secret store and removes it from
-logs. Never encode a credential in the relay hostname either. The reference
-stack does not deploy or provision a commercial RPC relay. RPC secrets must
-not reach signer configuration, process arguments, or logs.
+Restrict and audit access to Docker/container logs, configure short-lived or
+least-privilege provider credentials where available, and rotate a credential
+after suspected log exposure. A credential-free private relay such as
+`http://rpc-relay:8545/rpc` remains the safer production topology. Optional
+go-livepeer redaction work is tracked separately and must be reviewed, released,
+and adopted through a pinned image upgrade before this risk can be considered
+removed. URL userinfo and fragments remain rejected.
 
 ## Compose integration contract
 

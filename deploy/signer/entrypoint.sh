@@ -25,11 +25,8 @@ for value in "${SIGNER_ETH_ADDR:-}" "${SIGNER_CONTROLLER:-}"; do
   case "$value" in 0x*[!0-9a-fA-F]*|0x0000000000000000000000000000000000000000) fail 'address must contain nonzero hex bytes' ;; 0x*) ;; *) fail 'address must begin with 0x' ;; esac
 done
 case "${ETH_RPC_URL:-}" in https://?*|http://?*) ;; *) fail 'ETH_RPC_URL must be an HTTP(S) RPC endpoint' ;; esac
-case "$ETH_RPC_URL" in *\?*|*\#*|*@*) fail 'ETH_RPC_URL must not contain credentials, query, or fragment; use a private RPC relay' ;; esac
-rpc_host_path=${ETH_RPC_URL#*://}
-case "$rpc_host_path" in */*)
-  case "/${rpc_host_path#*/}" in /|/rpc|/rpc/) ;; *) fail 'ETH_RPC_URL path must be / or /rpc; upstream logs this URL, so use a credential-free relay' ;; esac
-esac
+case "$ETH_RPC_URL" in *\#*|*@*) fail 'ETH_RPC_URL must not contain userinfo or a fragment' ;; esac
+printf '%s\n' 'signer configuration warning: pinned go-livepeer may print the complete credential-bearing ETH_RPC_URL in logs' >&2
 case "${REMOTE_SIGNER_WEBHOOK_URL:-}" in
   https://?*/v1/compat/go-livepeer/authorize|http://?*/v1/compat/go-livepeer/authorize) ;;
   *) fail 'REMOTE_SIGNER_WEBHOOK_URL must target /v1/compat/go-livepeer/authorize' ;;
@@ -76,6 +73,43 @@ fi
 [ -z "${LP_KAFKAUSER:-}" ] && [ -z "${LP_KAFKAPASSWORD:-}" ] || {
   [ -n "${LP_KAFKAUSER:-}" ] && [ -n "${LP_KAFKAPASSWORD:-}" ] || fail 'configure both LP_KAFKAUSER and LP_KAFKAPASSWORD or neither'
 }
+case "${SIGNER_REMOTE_DISCOVERY:-true}" in true|false) ;; *) fail 'SIGNER_REMOTE_DISCOVERY must be true or false' ;; esac
+if [ -n "${SIGNER_ORCH_ADDR:-}" ]; then
+  [ "${SIGNER_REMOTE_DISCOVERY:-true}" = true ] || fail 'SIGNER_ORCH_ADDR requires SIGNER_REMOTE_DISCOVERY=true'
+  [ "${#SIGNER_ORCH_ADDR}" -le 8192 ] || fail 'SIGNER_ORCH_ADDR must not exceed 8192 characters'
+  case "$SIGNER_ORCH_ADDR" in ,*|*,|*,,*) fail 'SIGNER_ORCH_ADDR must not contain empty entries' ;; esac
+  old_ifs=$IFS
+  IFS=,
+  set -f
+  # Intentional splitting: each entry is validated before the original string is
+  # passed as one quoted argument to go-livepeer.
+  endpoint_count=0
+  for endpoint in $SIGNER_ORCH_ADDR; do
+    endpoint_count=$((endpoint_count + 1))
+    [ "$endpoint_count" -le 256 ] || fail 'SIGNER_ORCH_ADDR must not contain more than 256 service addresses'
+    case "$endpoint" in
+      *[[:space:]]*|*@*|*\?*|*\#*) fail 'SIGNER_ORCH_ADDR entries must not contain whitespace, credentials, queries, or fragments' ;;
+    esac
+    case "$endpoint" in
+      https://*) authority=${endpoint#https://} ;;
+      http://*)
+        [ "$SIGNER_MODE" != production ] || fail 'production SIGNER_ORCH_ADDR entries must use HTTPS'
+        authority=${endpoint#http://}
+        ;;
+      *://*) fail 'SIGNER_ORCH_ADDR entries must use HTTP or HTTPS' ;;
+      *) authority=$endpoint ;;
+    esac
+    case "$authority" in ''|*/*|*[!A-Za-z0-9.:-]*) fail 'SIGNER_ORCH_ADDR entries must be DNS or IPv4 service addresses with explicit ports' ;; esac
+    host=${authority%:*}
+    port=${authority##*:}
+    [ -n "$host" ] && [ "$host" != "$authority" ] || fail 'SIGNER_ORCH_ADDR entries require an explicit port'
+    case "$host" in *:*) fail 'SIGNER_ORCH_ADDR entries must use DNS names or IPv4 addresses' ;; esac
+    case "$port" in ''|*[!0-9]*) fail 'SIGNER_ORCH_ADDR ports must be integers' ;; esac
+    [ "$port" -ge 1 ] && [ "$port" -le 65535 ] || fail 'SIGNER_ORCH_ADDR ports must be 1..65535'
+  done
+  set +f
+  IFS=$old_ifs
+fi
 SIGNER_ETH_KEYSTORE_PATH=${SIGNER_ETH_KEYSTORE_PATH:-/run/secrets/signer-keystore.json}
 SIGNER_PASSWORD_FILE=${SIGNER_PASSWORD_FILE:-/run/secrets/signer-password}
 [ "$SIGNER_ETH_KEYSTORE_PATH" = /run/secrets/signer-keystore.json ] || fail 'SIGNER_ETH_KEYSTORE_PATH must be /run/secrets/signer-keystore.json'
@@ -94,16 +128,17 @@ grep -q '[^[:space:]]' "$SIGNER_PASSWORD_FILE" || fail 'empty/whitespace keystor
 
 SIGNER_DATA_DIR=${SIGNER_DATA_DIR:-/data}
 [ -d "$SIGNER_DATA_DIR" ] && [ -w "$SIGNER_DATA_DIR" ] || fail 'mount a writable SIGNER_DATA_DIR owned by UID/GID 10001'
-case "${SIGNER_REMOTE_DISCOVERY:-true}" in true|false) ;; *) fail 'SIGNER_REMOTE_DISCOVERY must be true or false' ;; esac
 case "${1:-}" in --validate-only) printf '%s\n' 'signer configuration valid; run preflight before enabling traffic'; exit 0 ;; '') ;; *) fail 'entrypoint does not accept extra flags; configure named environment settings' ;; esac
 
 # Source files remain operator-owned mode 0600. Copy only the signer custody
 # inputs into this container's tmpfs before permanently dropping privileges.
 runtime_secret_dir=/runtime-secrets
 [ "$(id -u)" -eq 0 ] || fail 'entrypoint must start as root to read protected secret mounts'
-install -m 0400 -o 10001 -g 10001 "$SIGNER_ETH_KEYSTORE_PATH" "$runtime_secret_dir/signer-keystore.json"
-install -m 0400 -o 10001 -g 10001 "$SIGNER_PASSWORD_FILE" "$runtime_secret_dir/signer-password"
+install -m 0400 "$SIGNER_ETH_KEYSTORE_PATH" "$runtime_secret_dir/signer-keystore.json"
+install -m 0400 "$SIGNER_PASSWORD_FILE" "$runtime_secret_dir/signer-password"
+chown 10001:10001 "$runtime_secret_dir/signer-keystore.json" "$runtime_secret_dir/signer-password"
 SIGNER_ETH_KEYSTORE_PATH=$runtime_secret_dir/signer-keystore.json
+SIGNER_ETH_KEYSTORE_DIR=$runtime_secret_dir
 SIGNER_PASSWORD_FILE=$runtime_secret_dir/signer-password
 
 # Native ff parser uppercases the flag name, without inserting camel-case underscores.
@@ -114,13 +149,16 @@ export HOME=/nonexistent
 unset WEBHOOK_SECRET ETH_RPC_URL
 exec setpriv \
   --reuid=10001 --regid=10001 --clear-groups \
-  --inh-caps=-all --ambient-caps=-all --bounding-set=-all \
+  --inh-caps=-chown,-dac_override,-setpcap,-setgid,-setuid \
+  --ambient-caps=-chown,-dac_override,-setpcap,-setgid,-setuid \
+  --bounding-set=-chown,-dac_override,-setpcap,-setgid,-setuid \
   --no-new-privs /usr/local/bin/livepeer \
   -remoteSigner=true -remoteSignerAllowNoAuth=false -monitor=true \
   "-network=$SIGNER_NETWORK" "-ethController=$SIGNER_CONTROLLER" \
-  "-ethAcctAddr=$SIGNER_ETH_ADDR" "-ethKeystorePath=$SIGNER_ETH_KEYSTORE_PATH" \
+  "-ethAcctAddr=$SIGNER_ETH_ADDR" "-ethKeystorePath=$SIGNER_ETH_KEYSTORE_DIR" \
   "-ethPassword=$SIGNER_PASSWORD_FILE" "-datadir=$SIGNER_DATA_DIR" \
   "-httpAddr=0.0.0.0:$SIGNER_PORT" -cliAddr=127.0.0.1:4935 \
   "-remoteSignerWebhookUrl=$REMOTE_SIGNER_WEBHOOK_URL" \
   "-remoteDiscovery=${SIGNER_REMOTE_DISCOVERY:-true}" \
+  "-orchAddr=${SIGNER_ORCH_ADDR:-}" \
   "-kafkaBootstrapServers=$KAFKA_BROKERS" "-kafkaGatewayTopic=$KAFKA_GATEWAY_TOPIC" -v=3

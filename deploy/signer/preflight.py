@@ -126,6 +126,57 @@ def url(value: str, label: str) -> None:
     )
 
 
+def validate_orchestrator_addresses(env: Mapping[str, str]) -> None:
+    """Validate go-livepeer's comma-separated static discovery source."""
+    value = env.get("SIGNER_ORCH_ADDR", "")
+    if not value:
+        return
+    require(
+        env.get("SIGNER_REMOTE_DISCOVERY", "true") == "true",
+        "SIGNER_ORCH_ADDR requires SIGNER_REMOTE_DISCOVERY=true",
+    )
+    require(len(value) <= 8192, "SIGNER_ORCH_ADDR must not exceed 8192 characters")
+    entries = value.split(",")
+    require(
+        1 <= len(entries) <= 256 and all(entries),
+        "SIGNER_ORCH_ADDR requires 1..256 comma-separated service addresses",
+    )
+    for entry in entries:
+        require(
+            entry == entry.strip() and not any(character.isspace() for character in entry),
+            "SIGNER_ORCH_ADDR entries must not contain whitespace",
+        )
+        candidate = entry if "://" in entry else "https://" + entry
+        parsed = urlsplit(candidate)
+        require(
+            parsed.scheme in {"http", "https"}
+            and bool(parsed.hostname)
+            and bool(re.fullmatch(r"[A-Za-z0-9.-]+", parsed.hostname or ""))
+            and parsed.username is None
+            and parsed.password is None
+            and parsed.path in {"", "/"}
+            and not parsed.query
+            and not parsed.fragment,
+            "SIGNER_ORCH_ADDR entries require DNS or IPv4 HTTP(S) service addresses "
+            "without credentials, paths, queries, or fragments",
+        )
+        try:
+            port = parsed.port
+        except ValueError as error:
+            raise InvalidConfiguration(
+                "SIGNER_ORCH_ADDR entries require ports in the range 1..65535"
+            ) from error
+        require(
+            port is not None and 1 <= port <= 65535,
+            "SIGNER_ORCH_ADDR entries require an explicit port in the range 1..65535",
+        )
+        if env.get("SIGNER_MODE") == "production":
+            require(
+                parsed.scheme == "https",
+                "production SIGNER_ORCH_ADDR entries must use HTTPS",
+            )
+
+
 def validate(env: Mapping[str, str]) -> None:
     require(
         env.get("SIGNER_MODE") in {"evaluation", "production"},
@@ -148,12 +199,6 @@ def validate(env: Mapping[str, str]) -> None:
             f"{name} requires a nonzero Ethereum address",
         )
     url(env.get("ETH_RPC_URL", ""), "ETH_RPC_URL")
-    rpc_url = urlsplit(env["ETH_RPC_URL"])
-    require(
-        not rpc_url.query and rpc_url.path in {"", "/", "/rpc", "/rpc/"},
-        "ETH_RPC_URL must be credential-free with root or /rpc path; "
-        "upstream logs it, so use a private relay",
-    )
     url(env.get("REMOTE_SIGNER_WEBHOOK_URL", ""), "REMOTE_SIGNER_WEBHOOK_URL")
     require(
         not urlsplit(env["REMOTE_SIGNER_WEBHOOK_URL"]).query,
@@ -191,6 +236,7 @@ def validate(env: Mapping[str, str]) -> None:
         env.get("SIGNER_REMOTE_DISCOVERY", "true") in {"true", "false"},
         "SIGNER_REMOTE_DISCOVERY must be true or false",
     )
+    validate_orchestrator_addresses(env)
     for name in ("SIGNER_MIN_GAS_WEI", "SIGNER_MIN_DEPOSIT_WEI", "SIGNER_MIN_RESERVE_WEI"):
         positive(env, name)
     require(
@@ -237,7 +283,14 @@ def request_json(
     url(endpoint, "dependency endpoint")
     data = None if payload is None else json.dumps(payload).encode()
     request = Request(  # noqa: S310 — HTTP(S) scheme validated above.
-        endpoint, data=data, headers={"Content-Type": "application/json", **(headers or {})}
+        endpoint,
+        data=data,
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "go-ethereum/rpc",
+            **(headers or {}),
+        },
     )
     with urlopen(request, timeout=6) as response:  # noqa: S310 — validated HTTP(S) request.
         body = response.read(1_048_577)

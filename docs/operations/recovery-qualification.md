@@ -29,7 +29,7 @@ routes fail closed while no signer is financially ready. This validates image,
 wrapper-restart, and routing boundaries without claiming a signed transaction.
 
 A funded signer transaction remains an operator-only release gate. It needs a
-real encrypted key, a credential-free on-chain RPC relay, gas, and TicketBroker
+real encrypted key, an on-chain RPC endpoint, gas, and TicketBroker
 deposit and reserve. Use `make signer-preflight` and `make signer-smoke` with
 operator-controlled inputs; neither this deterministic exercise nor a fake
 chain result substitutes for that evidence.

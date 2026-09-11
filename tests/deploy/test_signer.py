@@ -84,8 +84,74 @@ class SignerTests(unittest.TestCase):
         self.assertIn("-monitor=true", source)
         self.assertIn("-cliAddr=127.0.0.1:4935", source)
         self.assertIn("unset WEBHOOK_SECRET ETH_RPC_URL", source)
-        self.assertIn("--bounding-set=-all", source)
+        capability_drop = "-chown,-dac_override,-setpcap,-setgid,-setuid"
+        self.assertIn(f"--inh-caps={capability_drop}", source)
+        self.assertIn(f"--ambient-caps={capability_drop}", source)
+        self.assertIn(f"--bounding-set={capability_drop}", source)
+        self.assertNotIn("-caps=-all", source)
         self.assertIn("SIGNER_ETH_KEYSTORE_PATH must be /run/secrets/signer-keystore.json", source)
+        self.assertIn('"-orchAddr=${SIGNER_ORCH_ADDR:-}"', source)
+        self.assertIn('install -m 0400 "$SIGNER_ETH_KEYSTORE_PATH"', source)
+        self.assertIn('chown 10001:10001 "$runtime_secret_dir/signer-keystore.json"', source)
+        self.assertNotIn("install -m 0400 -o 10001", source)
+        self.assertIn("SIGNER_ETH_KEYSTORE_DIR=$runtime_secret_dir", source)
+        self.assertIn('"-ethKeystorePath=$SIGNER_ETH_KEYSTORE_DIR"', source)
+        self.assertNotIn('"-ethKeystorePath=$SIGNER_ETH_KEYSTORE_PATH"', source)
+
+    def test_diagnostics_copy_secrets_before_dropping_explicit_capabilities(self) -> None:
+        source = (ROOT / "deploy/signer/diagnostic-entrypoint.sh").read_text()
+        capability_drop = "-chown,-dac_override,-setpcap,-setgid,-setuid"
+        self.assertIn('install -m 0400 "$source_path" "$target_path"', source)
+        self.assertIn('chown 10001:10001 "$target_path"', source)
+        self.assertNotIn("install -m 0400 -o 10001", source)
+        self.assertIn(f"--inh-caps={capability_drop}", source)
+        self.assertIn(f"--ambient-caps={capability_drop}", source)
+        self.assertIn(f"--bounding-set={capability_drop}", source)
+        self.assertNotIn("-caps=-all", source)
+
+    def test_static_orchestrator_addresses_are_validated(self) -> None:
+        valid = "https://orch-a.example:8935,orch-b.example:8936"
+        preflight.validate(self.env | {"SIGNER_ORCH_ADDR": valid})
+        # Fixture paths intentionally fail the wrapper's fixed container-mount
+        # boundary after the orchestrator list has passed shell validation.
+        valid_shell = self.shell({"SIGNER_ORCH_ADDR": valid})
+        self.assertIn("SIGNER_ETH_KEYSTORE_PATH must be", valid_shell.stderr)
+        preflight.validate(
+            self.env
+            | {
+                "SIGNER_MODE": "production",
+                "SIGNER_ORCH_ADDR": "https://orch-a.example:8935",
+            }
+        )
+
+        invalid = (
+            "orch-a.example",
+            "orch-a.example:0",
+            "orch-a.example:65536",
+            "orch-a.example:abc",
+            "orch-a.example:8935,",
+            "orch-a.example:8935, orch-b.example:8935",
+            "ftp://orch-a.example:8935",
+            "https://user:secret@orch-a.example:8935",
+            "https://orch-a.example:8935/path",
+            "https://orch-a.example:8935?token=secret",
+            "https://orch_name.example:8935",
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                with self.assertRaises(preflight.InvalidConfiguration):
+                    preflight.validate(self.env | {"SIGNER_ORCH_ADDR": value})
+                result = self.shell({"SIGNER_ORCH_ADDR": value})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn(value, result.stderr)
+
+        for values in (
+            {"SIGNER_ORCH_ADDR": "orch-a.example:8935", "SIGNER_REMOTE_DISCOVERY": "false"},
+            {"SIGNER_MODE": "production", "SIGNER_ORCH_ADDR": "http://orch-a.example:8935"},
+        ):
+            with self.assertRaises(preflight.InvalidConfiguration):
+                preflight.validate(self.env | values)
+            self.assertNotEqual(self.shell(values).returncode, 0)
 
     def test_invalid_configurations_fail_without_echoing_secrets(self) -> None:
         cases = {
@@ -98,9 +164,7 @@ class SignerTests(unittest.TestCase):
                 "",
                 "file:///secret",
                 "https://user:private-secret@rpc.invalid/",
-                "https://rpc.invalid/?token=private-secret",
                 "https://rpc.invalid/#private-secret",
-                "https://rpc.invalid/private-secret",
             ],
             "REMOTE_SIGNER_WEBHOOK_URL": [
                 "",
@@ -155,6 +219,20 @@ class SignerTests(unittest.TestCase):
                 preflight.validate(self.env | values)
         self.assertNotEqual(self.shell({"SIGNER_DATA_DIR": "/does/not/exist"}).returncode, 0)
         self.assertNotEqual(self.shell(argument="-remoteSignerAllowNoAuth").returncode, 0)
+
+    def test_credential_bearing_rpc_paths_and_queries_are_allowed_with_safe_errors(self) -> None:
+        for rpc_url in (
+            "https://rpc.invalid/provider-key",
+            "https://rpc.invalid/v1/provider-key",
+            "https://rpc.invalid/?token=provider-key",
+        ):
+            with self.subTest(rpc_url=rpc_url):
+                preflight.validate(self.env | {"ETH_RPC_URL": rpc_url})
+                result = self.shell({"ETH_RPC_URL": rpc_url})
+                self.assertNotIn(rpc_url, result.stderr)
+                self.assertIn(
+                    "may print the complete credential-bearing ETH_RPC_URL", result.stderr
+                )
 
     def test_file_failures_and_v3_address_binding(self) -> None:
         for content in ("", "  \n"):
@@ -326,6 +404,10 @@ class SignerTests(unittest.TestCase):
                 {"result": "ok"},
             )
             self.assertEqual(call.call_args.kwargs["timeout"], 6)
+            request = call.call_args.args[0]
+            self.assertEqual(request.get_header("Accept"), "application/json")
+            self.assertEqual(request.get_header("Content-type"), "application/json")
+            self.assertEqual(request.get_header("User-agent"), "go-ethereum/rpc")
         with (
             patch.object(preflight, "urlopen", return_value=io.BytesIO(b"x" * 1_048_577)),
             self.assertRaises(preflight.InvalidConfiguration),

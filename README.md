@@ -185,7 +185,7 @@ production settings fail startup.
 | Bootstrap/credentials | Auth and credential pepper host files, invitation lifetime, optional paired bootstrap files |
 | Signer/admission | Webhook secret and session pepper files, global exposure cap, signer ID and browser-facing signer/discovery URLs |
 | Metering | Internal broker address, topic, consumer group/client IDs, payload bound, reconciliation interval/batch size, confirmation grace, heartbeat thresholds |
-| Real signer | Mode, network, chain/controller, credential-free RPC URL, address, encrypted V3 keystore/password files, funding floors, internal webhook URL, Kafka credentials |
+| Real signer | Mode, network, chain/controller, RPC URL, address, encrypted V3 keystore/password files, funding floors, internal webhook URL, Kafka credentials |
 | Recovery/operations | Age recipient/identity, encrypted backup volume, backup key ID, and operator actor ID |
 | Telemetry | OTLP endpoint and export interval |
 
@@ -217,7 +217,7 @@ mode, `make up` refuses to start it without all of the following:
 
 - an operator-owned encrypted Ethereum V3 keystore and separate password file;
 - the matching signer address, selected chain and controller;
-- a credential-free RPC URL;
+- an RPC URL, acknowledging that the pinned upstream signer may log its full value;
 - configured minimum gas, TicketBroker deposit, and reserve; and
 - reachable clearinghouse webhook and dedicated Kafka topic.
 
@@ -228,6 +228,12 @@ make signer-preflight
 make up
 make signer-smoke
 ```
+
+To publish a static orchestrator list through the signer discovery endpoint,
+keep `SIGNER_REMOTE_DISCOVERY=true` and set, for example,
+`SIGNER_ORCH_ADDR=https://orch-a.example:8935,https://orch-b.example:8935`.
+These are orchestrator service endpoints, not Ethereum addresses. See the
+signer operations guide for validation and the alternative gateway-side model.
 
 `make signer-preflight` performs static, key/address, RPC, network, and funding
 checks without logging secret material. `make signer-smoke` starts the stack and

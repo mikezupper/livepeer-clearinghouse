@@ -26,6 +26,8 @@ class RuntimeTests(unittest.TestCase):
         result = run(
             "docker",
             "compose",
+            "--profile",
+            "signer-check",
             "--env-file",
             ".env.example",
             "config",
@@ -61,7 +63,13 @@ class RuntimeTests(unittest.TestCase):
         self.assertTrue(model["networks"]["database"]["internal"])
         self.assertTrue(model["networks"]["broker"]["internal"])
         self.assertNotIn("app", services["redpanda"]["networks"])
-        self.assertEqual(set(services["edge"]["networks"]), {"app"})
+        self.assertEqual(set(services["edge"]["networks"]), {"app", "ingress"})
+        self.assertFalse(model["networks"]["ingress"].get("internal", False))
+        ingress_members = {
+            name for name, service in services.items() if "ingress" in service.get("networks", {})
+        }
+        self.assertEqual(ingress_members, {"edge"})
+        self.assertEqual(services["edge"]["networks"]["ingress"]["gw_priority"], 1)
         edge_config = (ROOT / "deploy/edge.Caddyfile").read_text()
         for signer_path in (
             "/generate-live-payment",
@@ -115,7 +123,17 @@ class RuntimeTests(unittest.TestCase):
             {"DAC_OVERRIDE", "SETPCAP", "SETGID", "SETUID"},
         )
         self.assertEqual(services["remote-signer"]["user"], "0:0")
+        self.assertIn("SIGNER_ORCH_ADDR", services["remote-signer"]["environment"])
+        self.assertIn("SIGNER_ORCH_ADDR", services["signer-diagnostics"]["environment"])
+        volume_init = services["signer-volume-init"]
+        self.assertEqual(volume_init["entrypoint"], ["/bin/sh", "-c"])
+        self.assertEqual(volume_init["command"], ["chown 10001:10001 /data"])
+        self.assertEqual(volume_init["cap_add"], ["CHOWN"])
+        self.assertNotIn("secrets", volume_init)
         self.assertIn("/runtime-secrets", " ".join(services["remote-signer"]["tmpfs"]))
+        signer_health = " ".join(services["remote-signer"]["healthcheck"]["test"])
+        self.assertIn("--bounding-set=-chown,-dac_override,-setpcap,-setgid,-setuid", signer_health)
+        self.assertNotIn("-caps=-all", signer_health)
         self.assertEqual(
             services["api"]["depends_on"]["bootstrap-operator"]["condition"],
             "service_completed_successfully",

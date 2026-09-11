@@ -40,11 +40,12 @@ secret. Credentials and signer keys are never committed, returned twice, or
 logged. Production signer keystores are encrypted and mounted read-only where
 go-livepeer supports it.
 
-The pinned signer logs its RPC URL without redaction. Only credential-free
-RPC URLs may reach its configuration; authenticated providers require an
-operator-managed private relay that injects and redacts credentials. See
-[signer operations](operations/signer.md) for URL validation, secret mounts,
-private admin access, and funding-readiness checks.
+The pinned signer logs its RPC URL without redaction. Custom provider paths and
+query credentials are accepted at the project owner's direction, so container
+logs must be treated as potentially credential-bearing and tightly restricted.
+A credential-free private relay remains the safer production topology. See
+[signer operations](operations/signer.md) for the accepted-risk boundary,
+secret mounts, private admin access, and funding-readiness checks.
 
 ## Authorization
 

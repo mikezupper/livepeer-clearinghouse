@@ -47,7 +47,7 @@ password nor a password-bearing URL appears in the rendered Compose model.
 The signer is a default Compose service, not an optional profile. The accepted
 wrapper and unmodified upstream binary deliberately have no keyless test mode.
 Real startup requires an operator-owned encrypted V3 keystore and separate
-password, a credential-free RPC URL, the selected chain/controller, a matching
+password, an RPC URL, the selected chain/controller, a matching
 address, gas, and TicketBroker deposit/reserve. Inventing a local plaintext key,
 silently funding it, bypassing the webhook, or replacing the signer would break
 the custody and compatibility contract.
@@ -83,7 +83,9 @@ topic's one-signer trust binding.
 
 ## Network and process boundaries
 
-Only `127.0.0.1:${CLEARINGHOUSE_EDGE_PORT:-8080}` is published. Caddy routes
+Only `127.0.0.1:${CLEARINGHOUSE_EDGE_PORT:-8080}` is published. The edge alone
+joins a non-internal `ingress` network so rootless Docker can create that host
+forward; all edge-to-service traffic remains on the internal `app` network. Caddy routes
 `/v1` and `/health` to the API, `/admin/` to the admin app, and the three exact
 go-livepeer protocol paths (`/generate-live-payment`, `/sign-orchestrator-info`,
 and `/discover-orchestrators`) to the signing listener. `/` serves the user app.
@@ -99,8 +101,9 @@ publishes the API directly, attaches an untrusted workload to that network, or
 adds another ingress must replace the wildcard Uvicorn forwarded-IP setting
 with the exact proxy addresses before serving traffic.
 
-The database and broker networks are separate and internal. Redpanda is not on
-the edge/web application network. API and signer have a separate egress network
+The database, broker, and application networks are separate and internal.
+Redpanda is not on the edge/web application network, and no API or web service
+joins the edge-only ingress network. API and signer have a separate egress network
 for Resend/OAuth and chain RPC respectively. Application containers run without
 Linux capabilities, with no-new-privileges and read-only roots; only named data
 volumes and explicit tmpfs mounts are writable. The signer is pinned to
