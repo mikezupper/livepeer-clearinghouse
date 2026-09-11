@@ -75,6 +75,17 @@ class CiContractTests(unittest.TestCase):
         self.assertIn("job contracts must run exactly: make quality-contracts", errors)
         self.assertIn("job python-quality must run exactly: make quality-python", errors)
 
+    def test_requires_visual_failure_artifacts(self) -> None:
+        unconditional = SOURCE.replace("      - if: failure()\n", "      - if: always()\n", 1)
+        self.assertIn(
+            "browser visual job must retain artifacts only on failure", validate(unconditional)
+        )
+        missing_results = SOURCE.replace("          frontend/test-results/\n", "", 1)
+        self.assertIn(
+            "browser visual artifact is missing path: frontend/test-results/",
+            validate(missing_results),
+        )
+
     def test_rejects_inherited_project_references(self) -> None:
         self.assertIn(
             "stale inherited project references remain", validate(SOURCE + "\n# openmeter\n")

@@ -6,7 +6,7 @@ CORE_SERVICES := postgres redpanda redpanda-init migrate bootstrap-operator api 
 TEST_PROJECT ?= livepeer-clearinghouse-test
 
 .DEFAULT_GOAL := help
-.PHONY: help init-env prepare-development-secrets deployment-preflight operations-ownership-check migration-status migration-downgrade validate quality-repository quality-python quality-contracts quality-frontend test-backend-unit test-backend-live test-migrations test-migration-matrix test-admin-web test-user-web test-shared-web test-browser-e2e test-browser-accessibility test-browser-smoke build up up-core down destroy ps logs test smoke qualification-harness qualification-journey qualification-recovery qualification-evidence signer-preflight signer-smoke observability-up observability-check observability-down ops-status reconcile-check reconcile-repair retention-dry-run retention-apply backup backup-record restore-verify rotation-record capacity broker-recovery-test
+.PHONY: help init-env prepare-development-secrets deployment-preflight operations-ownership-check migration-status migration-downgrade validate quality-repository quality-python quality-contracts quality-frontend test-backend-unit test-backend-live test-migrations test-migration-matrix test-admin-web test-user-web test-shared-web test-browser-e2e test-browser-accessibility test-browser-visual test-browser-smoke build up up-core down destroy ps logs test smoke qualification-harness qualification-journey qualification-recovery qualification-evidence signer-preflight signer-smoke observability-up observability-check observability-down ops-status reconcile-check reconcile-repair retention-dry-run retention-apply backup backup-record restore-verify rotation-record capacity broker-recovery-test
 
 help: ## Show documented project commands.
 	@awk 'BEGIN {FS = ":.*## "; print "Livepeer Open Clearinghouse\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -119,6 +119,9 @@ test-browser-e2e: ## Run production-build Chromium application journeys.
 test-browser-accessibility: ## Run Chromium axe and composed-shadow semantic checks.
 	@cd frontend && npm run test:accessibility
 
+test-browser-visual: ## Compare Chromium desktop, mobile, and dark visual baselines.
+	@cd frontend && npm run test:visual
+
 test-browser-smoke: ## Run Firefox and WebKit production-build smoke checks.
 	@cd frontend && npm run test:smoke
 
@@ -153,7 +156,7 @@ test: validate ## Run every required local quality and contract gate.
 	@cd frontend && npm ci --ignore-scripts
 	@$(MAKE) --no-print-directory quality-contracts quality-frontend
 	@$(MAKE) --no-print-directory test-admin-web test-user-web test-shared-web
-	@$(MAKE) --no-print-directory test-browser-e2e test-browser-accessibility test-browser-smoke
+	@$(MAKE) --no-print-directory test-browser-e2e test-browser-accessibility test-browser-visual test-browser-smoke
 	@$(MAKE) --no-print-directory test-migrations test-backend-live
 
 smoke: up-core ## Run deterministic HTTP, authorization, Kafka, and database smoke.

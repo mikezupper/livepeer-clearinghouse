@@ -1,0 +1,218 @@
+@layer user-layout, user-components;
+
+@layer user-layout {
+  user-app {
+    --och-user-content-gap: var(--och-space-2);
+    --och-user-card-min-size: 12rem;
+    --och-user-dialog-max-size: 36rem;
+    --och-user-table-cell-padding: var(--och-space-1);
+    --och-user-control-padding: var(--och-space-1) var(--och-space-2);
+    --och-user-control-background: var(--och-color-surface-raised);
+    --och-user-control-border: var(--och-color-border);
+    --och-user-control-weight: 650;
+    --och-user-metric-weight: 700;
+    --och-user-disabled-opacity: 0.55;
+    --och-user-navigation-current-color: var(--och-color-text-strong);
+    --och-user-navigation-current-background: var(--och-color-brand-soft);
+    --och-user-badge-padding: var(--och-space-0) var(--och-space-1);
+    --och-user-badge-radius: 100vmax;
+    --och-user-badge-color: var(--och-color-text-muted);
+    --och-user-badge-background: var(--och-color-surface-muted);
+    --och-user-notice-color: var(--och-color-info);
+    --och-user-notice-background: var(--och-color-info-soft);
+  }
+
+  user-app::part(page) {
+    margin-block-start: var(--och-space-4);
+  }
+
+  user-app::part(auth-page),
+  user-app::part(identity-page),
+  user-app::part(state-page) {
+    inline-size: min(100%, 58rem);
+    margin-inline: auto;
+  }
+
+  user-app::part(table-scroll) {
+    max-inline-size: 100%;
+  }
+}
+
+@layer user-components {
+  user-app::part(navigation-heading),
+  user-app::part(eyebrow) {
+    color: var(--och-color-text-muted);
+    font-size: var(--och-font-size-caption);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  user-app::part(navigation-heading) {
+    padding: var(--och-space-2) var(--och-space-2) var(--och-space-1);
+  }
+
+  user-app::part(navigation-link) {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--och-space-2);
+    min-block-size: var(--och-control-min-block-size);
+    padding: var(--och-space-1) var(--och-space-2);
+    color: var(--och-color-text-muted);
+    border-radius: var(--och-radius-small);
+    font-size: var(--och-font-size-small);
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  user-app::part(navigation-link):hover,
+  user-app::part(navigation-link):focus-visible {
+    color: var(--och-color-text);
+    background: var(--och-color-surface-muted);
+  }
+
+  user-app::part(navigation-link):active {
+    color: var(--och-color-brand-strong);
+  }
+
+  user-app::part(navigation-link-active) {
+    color: var(--och-user-navigation-current-color);
+    background: var(--och-user-navigation-current-background);
+  }
+
+  user-app::part(navigation-icon) {
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  user-app::part(navigation-label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  user-app::part(account-context) {
+    display: grid;
+    min-inline-size: 0;
+    gap: var(--och-space-0);
+    font-size: var(--och-font-size-small);
+  }
+
+  user-app::part(account-context-label) {
+    color: var(--och-color-text-muted);
+    font-size: var(--och-font-size-caption);
+    text-transform: uppercase;
+  }
+
+  user-app::part(surface),
+  user-app::part(form-card),
+  user-app::part(table-panel) {
+    padding: var(--och-space-2);
+    background: var(--och-color-surface-raised);
+    border: var(--och-border-width) solid var(--och-color-border);
+    border-radius: var(--och-radius);
+  }
+
+  user-app::part(available-metric) {
+    border-color: var(--och-color-brand);
+    background: var(--och-color-brand-soft);
+  }
+
+  user-app::part(numeric-value),
+  user-app::part(table-panel) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  user-app::part(badge) {
+    padding: var(--och-user-badge-padding);
+    color: var(--och-user-badge-color);
+    background: var(--och-user-badge-background);
+    border-radius: var(--och-user-badge-radius);
+    font-size: var(--och-font-size-small);
+  }
+
+  user-app::part(badge-success) {
+    --och-user-badge-color: var(--och-color-success);
+    --och-user-badge-background: var(--och-color-success-soft);
+  }
+
+  user-app::part(badge-warning) {
+    --och-user-badge-color: var(--och-color-warning);
+    --och-user-badge-background: var(--och-color-warning-soft);
+  }
+
+  user-app::part(badge-danger) {
+    --och-user-badge-color: var(--och-color-danger);
+    --och-user-badge-background: var(--och-color-danger-soft);
+  }
+
+  user-app::part(badge-info) {
+    --och-user-badge-color: var(--och-color-info);
+    --och-user-badge-background: var(--och-color-info-soft);
+  }
+
+  user-app::part(notice) {
+    margin-block-start: var(--och-space-3);
+    padding: var(--och-space-2) var(--och-space-3);
+    color: var(--och-color-text);
+    background: var(--och-user-notice-background);
+    border-inline-start: 0.25rem solid var(--och-user-notice-color);
+    border-radius: var(--och-radius-small);
+  }
+
+  user-app::part(notice-success) {
+    --och-user-notice-color: var(--och-color-success);
+    --och-user-notice-background: var(--och-color-success-soft);
+  }
+
+  user-app::part(notice-danger) {
+    --och-user-notice-color: var(--och-color-danger);
+    --och-user-notice-background: var(--och-color-danger-soft);
+  }
+
+  user-app::part(actions) {
+    justify-content: flex-start;
+  }
+
+  user-app::part(dialog) {
+    padding: var(--och-space-4);
+    color: inherit;
+    background: var(--och-color-surface-raised);
+    border: var(--och-border-width) solid var(--och-color-border);
+    border-radius: var(--och-radius);
+  }
+
+  user-app::part(dialog)::backdrop {
+    background: var(--och-color-backdrop);
+    backdrop-filter: blur(0.25rem);
+  }
+}
+
+@media (width <= 35rem) {
+  user-app::part(session-context) {
+    display: none;
+  }
+
+  user-app::part(page-header),
+  user-app::part(card-header),
+  user-app::part(actions) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (forced-colors: active) {
+  user-app::part(surface),
+  user-app::part(form-card),
+  user-app::part(table-panel),
+  user-app::part(dialog) {
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
+}

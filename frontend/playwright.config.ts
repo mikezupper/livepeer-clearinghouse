@@ -17,6 +17,47 @@ export default defineConfig({
   projects: [
     { name: "chromium-journeys", testMatch: "**/*.journey.spec.ts", use: { ...devices["Desktop Chrome"] } },
     { name: "chromium-accessibility", testMatch: "**/*.accessibility.spec.ts", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "chromium-visual-desktop",
+      testMatch: "**/*.visual.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 1000 },
+        deviceScaleFactor: 1,
+        colorScheme: "dark",
+        reducedMotion: "reduce",
+        locale: "en-US",
+        timezoneId: "UTC"
+      }
+    },
+    {
+      name: "chromium-visual-mobile",
+      testMatch: "**/*.visual.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 1,
+        colorScheme: "dark",
+        reducedMotion: "reduce",
+        locale: "en-US",
+        timezoneId: "UTC",
+        hasTouch: true,
+        isMobile: true
+      }
+    },
+    {
+      name: "chromium-visual-desktop-light",
+      testMatch: "**/*.visual.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 1000 },
+        deviceScaleFactor: 1,
+        colorScheme: "light",
+        reducedMotion: "reduce",
+        locale: "en-US",
+        timezoneId: "UTC"
+      }
+    },
     { name: "firefox-smoke", testMatch: "**/*.smoke.spec.ts", use: { ...devices["Desktop Firefox"] } },
     { name: "webkit-smoke", testMatch: "**/*.smoke.spec.ts", use: { ...devices["Desktop Safari"] } }
   ],

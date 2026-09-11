@@ -290,7 +290,8 @@ make test
 points; formats, lints, and type-checks Python and TypeScript; checks repository
 architecture and generated OpenAPI/AsyncAPI/custom-element artifacts; runs
 unit, contract, real PostgreSQL/Redpanda, migration, Chromium journey,
-accessibility, Firefox, and WebKit tests; and builds both web applications.
+accessibility, desktop/mobile/dark visual regression, Firefox, and WebKit tests;
+and builds both web applications.
 
 Coverage is enforced independently—not as a blended repository number—at a
 minimum of 85% for lines, statements, functions, and branches for the backend,

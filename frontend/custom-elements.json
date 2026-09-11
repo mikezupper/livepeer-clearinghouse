@@ -98,6 +98,14 @@
             },
             {
               "kind": "field",
+              "name": "location",
+              "type": {
+                "text": "AdminLocation"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
               "name": "killDialog",
               "type": {
                 "text": "HTMLDialogElement | undefined"
@@ -130,6 +138,30 @@
               "name": "clearInvitation",
               "privacy": "private",
               "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "syncLocation",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "navigate",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
+                }
+              ]
             },
             {
               "kind": "method",
@@ -625,6 +657,40 @@
                   "type": {
                     "text": "AuthSession"
                   }
+                },
+                {
+                  "name": "route",
+                  "type": {
+                    "text": "AdminRouteId"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "renderNavigation",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderSession",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "session",
+                  "type": {
+                    "text": "AuthSession"
+                  }
                 }
               ]
             }
@@ -687,7 +753,7 @@
               "kind": "field",
               "name": "route",
               "type": {
-                "text": "Route"
+                "text": "UserRoute"
               },
               "privacy": "private"
             },
@@ -1345,8 +1411,144 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "",
+          "description": "Responsive semantic application shell shared by clearinghouse consoles.",
           "name": "OchAppShell",
+          "cssParts": [
+            {
+              "description": "Keyboard skip link.",
+              "name": "skip-link"
+            },
+            {
+              "description": "Overall shell layout.",
+              "name": "shell"
+            },
+            {
+              "description": "Persistent desktop and off-canvas mobile sidebar.",
+              "name": "sidebar"
+            },
+            {
+              "description": "Backward-compatible sidebar header.",
+              "name": "header"
+            },
+            {
+              "description": "Sidebar brand region.",
+              "name": "sidebar-header"
+            },
+            {
+              "description": "Clearinghouse wordmark group.",
+              "name": "brand"
+            },
+            {
+              "description": "Clearinghouse product name.",
+              "name": "brand-name"
+            },
+            {
+              "description": "Livepeer brand accent within the product name.",
+              "name": "brand-accent"
+            },
+            {
+              "description": "Compact clearinghouse purpose line.",
+              "name": "brand-subtitle"
+            },
+            {
+              "description": "Mobile navigation close control.",
+              "name": "sidebar-close-button"
+            },
+            {
+              "description": "Decorative icon inside the mobile close control.",
+              "name": "sidebar-close-icon"
+            },
+            {
+              "description": "Accessible text inside the mobile close control.",
+              "name": "sidebar-close-label"
+            },
+            {
+              "description": "Primary navigation landmark.",
+              "name": "navigation"
+            },
+            {
+              "description": "Mobile navigation dismiss target.",
+              "name": "navigation-backdrop"
+            },
+            {
+              "description": "Main workspace column.",
+              "name": "workspace"
+            },
+            {
+              "description": "Context and utility bar.",
+              "name": "topbar"
+            },
+            {
+              "description": "Mobile navigation toggle.",
+              "name": "menu-button"
+            },
+            {
+              "description": "Decorative icon inside the mobile navigation toggle.",
+              "name": "menu-icon"
+            },
+            {
+              "description": "Accessible text inside the mobile navigation toggle.",
+              "name": "menu-label"
+            },
+            {
+              "description": "Compact brand displayed in the mobile top bar.",
+              "name": "mobile-brand"
+            },
+            {
+              "description": "Context slot wrapper.",
+              "name": "context"
+            },
+            {
+              "description": "Utility slot wrapper.",
+              "name": "utility"
+            },
+            {
+              "description": "Main content landmark.",
+              "name": "main"
+            },
+            {
+              "description": "Page heading and summary group.",
+              "name": "heading-group"
+            },
+            {
+              "description": "Page title.",
+              "name": "title"
+            },
+            {
+              "description": "Page summary.",
+              "name": "summary"
+            },
+            {
+              "description": "Default slot wrapper.",
+              "name": "content"
+            },
+            {
+              "description": "Application footer.",
+              "name": "footer"
+            },
+            {
+              "description": "Application footer note.",
+              "name": "footer-note"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Main page content.",
+              "name": ""
+            },
+            {
+              "description": "Primary navigation list.",
+              "name": "navigation"
+            },
+            {
+              "description": "Compact page or tenant context for the top bar.",
+              "name": "context"
+            },
+            {
+              "description": "Session and utility actions for the top bar.",
+              "name": "utility"
+            }
+          ],
           "members": [
             {
               "kind": "field",
@@ -1374,6 +1576,81 @@
               },
               "default": "\"Primary\"",
               "attribute": "navigation-label"
+            },
+            {
+              "kind": "field",
+              "name": "navigationOpen",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "method",
+              "name": "setNavigationOpen",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "open",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "toggleNavigation",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "closeNavigation",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "handleNavigationClick",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "handleKeydown",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
             }
           ],
           "attributes": [

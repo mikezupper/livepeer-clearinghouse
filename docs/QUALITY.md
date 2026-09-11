@@ -50,6 +50,10 @@ another:
 - `quality-contracts` checks canonical OpenAPI/AsyncAPI references, exact
   FastAPI method/path parity, schema tests, and reproducible custom-elements
   metadata.
+- `test-browser-e2e`, `test-browser-accessibility`, `test-browser-visual`, and
+  `test-browser-smoke` exercise production builds in Chromium, compare the
+  committed desktop/mobile/dark baselines without updating them, and retain
+  visual failure evidence before Firefox and WebKit smoke coverage.
 
 The `Required quality aggregate` job always runs and succeeds only when every
 required job succeeded. Third-party Actions are pinned to immutable full commit

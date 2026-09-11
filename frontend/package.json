@@ -28,6 +28,7 @@
     "test:gates": "node --test scripts/*.test.mjs",
     "test:coverage": "npm run test:coverage --workspaces --if-present",
     "test:e2e": "playwright test --project=chromium-journeys",
+    "test:visual": "playwright test --project=chromium-visual-desktop --project=chromium-visual-mobile --project=chromium-visual-desktop-light",
     "test:smoke": "playwright test --project=firefox-smoke --project=webkit-smoke",
     "test:accessibility": "playwright test --project=chromium-accessibility",
     "test:browsers": "playwright test",

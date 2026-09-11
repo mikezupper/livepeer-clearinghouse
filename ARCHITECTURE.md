@@ -235,6 +235,31 @@ CSS is restricted to encapsulated structure and consumes inherited properties;
 components expose `part`/`exportparts` where application-level styling is
 intentional. Global selectors cannot otherwise cross the Shadow DOM boundary.
 
+Both applications use the shared `och-app-shell`: a persistent semantic
+sidebar and workspace on desktop, and an off-canvas navigation panel below
+48rem. The mobile shell moves focus into opened navigation, makes the background
+workspace inert, removes closed navigation from keyboard order, and restores
+focus on Escape. Its named `navigation`, `context`, and `utility` slots separate
+information architecture from shell mechanics. Its documented Shadow Parts are
+forwarded through each application root so the shared stylesheet can control
+visual treatment across both Shadow DOM boundaries.
+
+The admin application is built for and served at `/admin/`; its typed route
+model groups system tasks into Clearinghouse, Access, Economics, Metering, and
+Governance. The user application owns `/` and separates account overview,
+credentials, signer sessions, catalog, usage, charges, and profile. Caddy sends
+each mount to a distinct production image, and each web server falls back to
+its own `index.html` for History API routes. Neither application imports or
+embeds the other.
+
+The low-chroma surface hierarchy, compact operational density, and
+emerald/teal status language were informed by a read-only Pymthouse UX review.
+Only those general concepts cross the boundary. Pymthouse's React, Next.js,
+Tailwind, product identity, dark-only assumptions, and commercial feature
+semantics are neither copied nor runtime dependencies. The canonical token,
+status, slot, part, and extension contracts are defined in
+[frontend engineering](docs/FRONTEND.md).
+
 Pure contracts and Effect workflows run under Vitest. Component semantics and
 behavior run in real Chromium; critical journeys and accessibility run in
 Playwright against production builds, with Firefox and WebKit smoke coverage.

@@ -29,6 +29,7 @@ JOB_TARGETS = {
     "contracts": "quality-contracts",
     "browser-e2e": "test-browser-e2e",
     "browser-accessibility": "test-browser-accessibility",
+    "browser-visual": "test-browser-visual",
     "browser-smoke": "test-browser-smoke",
 }
 
@@ -98,6 +99,15 @@ def validate(source: str) -> list[str]:
         targets = MAKE.findall(body)
         if targets != [target]:
             errors.append(f"job {job} must run exactly: make {target}")
+
+    visual = jobs.get("browser-visual", "")
+    if not re.search(r"(?m)^      - if:\s*failure\(\)\s*$", visual):
+        errors.append("browser visual job must retain artifacts only on failure")
+    if not re.search(r"(?m)^        uses:\s*actions/upload-artifact@", visual):
+        errors.append("browser visual job must upload failure artifacts")
+    for artifact_path in ("frontend/test-results/", "frontend/playwright-report/"):
+        if artifact_path not in visual:
+            errors.append(f"browser visual artifact is missing path: {artifact_path}")
 
     required = jobs.get("required", "")
     if re.search(r"(?m)^    permissions:\s*$", required):

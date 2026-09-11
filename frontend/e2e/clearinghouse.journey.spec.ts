@@ -10,6 +10,7 @@ test("administrator signs in and performs tenant and ledger operations", async (
   await page.getByLabel("One-time code").fill("123456")
   await page.getByRole("button", { name: "Verify code" }).click()
   await expect(page.getByRole("heading", { name: "Authoritative overview" })).toBeVisible()
+  await page.getByRole("link", { name: "Tenants" }).click()
   await expect(page.getByText("Video team", { exact: true })).toBeVisible()
 
   const tenantCard = page.locator("article").filter({ hasText: "Create tenant" })
@@ -17,6 +18,7 @@ test("administrator signs in and performs tenant and ledger operations", async (
   await tenantCard.getByRole("button", { name: "Create tenant" }).click()
   await expect(page.getByText("Change saved and authoritative data refreshed.")).toBeVisible()
 
+  await page.getByRole("link", { name: "Financials" }).click()
   const grantCard = page.locator("article").filter({ hasText: "Post ledger grant" })
   await grantCard.getByLabel("Account ID").fill(ids.account)
   await grantCard.getByLabel("Signed amount").fill("250")

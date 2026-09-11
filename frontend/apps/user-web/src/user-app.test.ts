@@ -128,7 +128,7 @@ describe("user application journeys", () => {
     expect(shell?.shadowRoot?.querySelectorAll("main")).toHaveLength(1)
     expect(element.shadowRoot?.querySelectorAll("a[href='/v1/auth/oauth/google/start']")).toHaveLength(1)
     expect(element.shadowRoot?.querySelectorAll("a[href='/v1/auth/oauth/github/start']")).toHaveLength(1)
-    expect(element.shadowRoot?.querySelector("[style]")).toBeNull()
+    expect(element.shadowRoot?.querySelector("[class], [style]")).toBeNull()
     expect(element.shadowRoot?.querySelectorAll("input:not([id]), label:not([for])")).toHaveLength(0)
     const accessibility = await axe.run(document, {
       runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] }
@@ -137,7 +137,7 @@ describe("user application journeys", () => {
 
     submit(element, "form", { email: "person@example.org" })
     await waitForText(element, "one-time code has been sent")
-    submit(element, "form:nth-of-type(2)", { email: "person@example.org", code: "123456" })
+    submit(element, "form:has(#verify-code)", { email: "person@example.org", code: "123456" })
     await waitForText(element, "Connect your account")
     submit(element, "form", { invitation: "och_inv_" + "x".repeat(50) })
     await waitForText(element, "Sign in again")
@@ -148,11 +148,32 @@ describe("user application journeys", () => {
     const api = installApi()
     const element = mount()
     await waitForText(element, "Studio")
+    const overviewLink = element.shadowRoot?.querySelector("a[href='/']")
+    expect(overviewLink).not.toBeNull()
+    if (overviewLink !== null && overviewLink !== undefined) expect(getComputedStyle(overviewLink).boxSizing).toBe("border-box")
     expect(element.shadowRoot?.textContent).toContain("800 wei")
+    expect(element.shadowRoot?.querySelector("a[href='/']")?.getAttribute("aria-current")).toBe("page")
+    expect(element.shadowRoot?.querySelector("a[href='/usage']")?.getAttribute("aria-current")).toBe("false")
+    expect(element.shadowRoot?.querySelector("[slot='context']")?.textContent).toContain("Studio")
+    expect(element.shadowRoot?.querySelector("[slot='utility']")?.textContent).toContain("Authenticated")
+    const navigationIcons = element.shadowRoot?.querySelectorAll<SVGElement>("svg[part~='navigation-icon']") ?? []
+    expect(navigationIcons).toHaveLength(7)
+    expect(new Set(Array.from(navigationIcons, (icon) => icon.dataset.icon)).size).toBe(7)
+    for (const icon of navigationIcons) {
+      expect(icon.getAttribute("aria-hidden")).toBe("true")
+      expect(icon.getAttribute("focusable")).toBe("false")
+      expect(icon.querySelector("path, circle, rect")).not.toBeNull()
+    }
+    expect(element.shadowRoot?.querySelector("[class], [style]")).toBeNull()
+    const accessibility = await axe.run(document, {
+      runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] }
+    })
+    expect(accessibility.violations).toEqual([])
     for (const route of ["catalog", "usage", "charges", "profile"] as const) {
       const anchor = element.shadowRoot?.querySelector<HTMLAnchorElement>(`a[href='/${route}']`)
       anchor?.click()
       await waitForText(element, route === "catalog" ? "video.generate" : route === "usage" ? id.event : route === "charges" ? "2 wei" : id.principal)
+      expect(anchor?.getAttribute("aria-current")).toBe("page")
     }
     expect(api.requests.filter((request) => request.url.includes("account_id=")).every((request) => request.url.includes(id.account))).toBe(true)
     const tables = element.shadowRoot?.querySelectorAll("table")

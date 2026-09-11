@@ -38,54 +38,149 @@
 
 @layer tokens {
   :root {
-    color-scheme: light dark;
+    color-scheme: dark;
 
-    --och-hue: 252;
-    --och-color-brand: oklch(58% 0.2 var(--och-hue));
-    --och-color-brand-hover: oklch(
-      from var(--och-color-brand) calc(l - 0.07) c h
+    --och-hue: 163.22;
+    --och-color-brand: light-dark(
+      oklch(50.81% 0.1049 165.61deg),
+      oklch(77.29% 0.1535 var(--och-hue))
+    );
+    --och-color-brand-hover: light-dark(
+      oklch(43.18% 0.0865 166.91deg),
+      oklch(84.52% 0.1299 164.98deg)
+    );
+    --och-color-brand-strong: light-dark(
+      oklch(43.18% 0.0865 166.91deg),
+      oklch(77.29% 0.1535 var(--och-hue))
+    );
+    --och-color-brand-soft: color-mix(
+      in oklch,
+      var(--och-color-brand) 13%,
+      transparent
+    );
+    --och-color-accent: light-dark(
+      oklch(51.09% 0.0861 186.39deg),
+      oklch(78.45% 0.1325 181.91deg)
     );
     --och-color-surface: light-dark(
-      oklch(99% 0.006 var(--och-hue)),
-      oklch(18% 0.016 var(--och-hue))
+      oklch(98.51% 0 89.88deg),
+      oklch(14.08% 0.0044 285.82deg)
     );
     --och-color-surface-raised: light-dark(
-      oklch(100% 0 0deg),
-      oklch(23% 0.02 var(--och-hue))
+      oklch(100% 0 89.88deg),
+      oklch(21.03% 0.0059 285.89deg)
     );
+    --och-color-surface-muted: light-dark(
+      oklch(96.74% 0.0013 286.38deg),
+      oklch(27.39% 0.0055 286.03deg)
+    );
+    --och-color-surface-sidebar: light-dark(
+      oklch(96.74% 0.0013 286.38deg),
+      oklch(14.08% 0.0044 285.82deg)
+    );
+    --och-color-overlay: oklch(0% 0 0deg / 68%);
+    --och-color-backdrop: oklch(0% 0 0deg / 72%);
     --och-color-text: light-dark(
-      oklch(22% 0.02 var(--och-hue)),
-      oklch(94% 0.01 var(--och-hue))
+      oklch(21.03% 0.0059 285.89deg),
+      oklch(96.74% 0.0013 286.38deg)
     );
-    --och-color-text-muted: color-mix(
-      in oklch,
-      var(--och-color-text) 64%,
-      var(--och-color-surface)
+    --och-color-text-strong: light-dark(
+      oklch(14.08% 0.0044 285.82deg),
+      oklch(98.51% 0 89.88deg)
     );
-    --och-color-border: color-mix(
+    --och-color-text-muted: light-dark(
+      oklch(44.19% 0.0146 285.79deg),
+      oklch(71.18% 0.0129 286.07deg)
+    );
+    --och-color-border: light-dark(
+      oklch(87.11% 0.0055 286.29deg),
+      oklch(27.39% 0.0055 286.03deg)
+    );
+    --och-color-border-strong: light-dark(
+      oklch(55.17% 0.0138 285.94deg),
+      oklch(55.17% 0.0138 285.94deg)
+    );
+    --och-color-success: light-dark(
+      oklch(50.81% 0.1049 165.61deg),
+      oklch(77.29% 0.1535 var(--och-hue))
+    );
+    --och-color-success-soft: color-mix(
       in oklch,
-      var(--och-color-text) 16%,
-      var(--och-color-surface)
+      var(--och-color-success) 14%,
+      transparent
+    );
+    --och-color-warning: light-dark(
+      oklch(55.53% 0.1455 49deg),
+      oklch(83.69% 0.1644 84.43deg)
+    );
+    --och-color-warning-soft: color-mix(
+      in oklch,
+      var(--och-color-warning) 14%,
+      transparent
+    );
+    --och-color-danger: light-dark(
+      oklch(50.54% 0.1905 27.52deg),
+      oklch(71.06% 0.1661 22.22deg)
+    );
+    --och-color-danger-soft: color-mix(
+      in oklch,
+      var(--och-color-danger) 14%,
+      transparent
+    );
+    --och-color-info: light-dark(
+      oklch(48.82% 0.2172 264.38deg),
+      oklch(71.37% 0.1434 254.62deg)
+    );
+    --och-color-info-soft: color-mix(
+      in oklch,
+      var(--och-color-info) 14%,
+      transparent
+    );
+    --och-color-refund: light-dark(
+      oklch(49.55% 0.2369 301.92deg),
+      oklch(72.17% 0.1767 305.5deg)
+    );
+    --och-color-refund-soft: color-mix(
+      in oklch,
+      var(--och-color-refund) 14%,
+      transparent
     );
     --och-font-sans: ui-sans-serif, system-ui, sans-serif;
-    --och-font-size-0: clamp(1rem, 0.95rem + 0.2vw, 1.125rem);
-    --och-font-size-1: clamp(1.25rem, 1.08rem + 0.65vw, 1.625rem);
-    --och-font-size-2: clamp(1.625rem, 1.3rem + 1.25vw, 2.375rem);
+    --och-font-mono:
+      ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+    --och-font-size-caption: 0.6875rem;
+    --och-font-size-small: 0.8125rem;
+    --och-font-size-0: 0.9375rem;
+    --och-font-size-1: clamp(1.125rem, 1.05rem + 0.3vw, 1.25rem);
+    --och-font-size-2: clamp(1.5rem, 1.3rem + 0.75vw, 2rem);
+    --och-space-0: 0.25rem;
     --och-space-1: 0.5rem;
     --och-space-2: 0.75rem;
-    --och-space-3: clamp(1rem, 0.75rem + 1vw, 1.5rem);
-    --och-space-4: clamp(1.5rem, 1rem + 2vw, 3rem);
+    --och-space-3: 1rem;
+    --och-space-4: 1.5rem;
+    --och-space-5: 2rem;
+    --och-radius-small: 0.5rem;
     --och-radius: 0.75rem;
+    --och-radius-large: 1rem;
+    --och-border-width: 1px;
+    --och-shadow-color: light-dark(
+      oklch(0% 0 0deg / 10%),
+      oklch(0% 0 0deg / 38%)
+    );
     --och-shadow:
-      0 1px 2px oklch(20% 0.02 var(--och-hue) / 8%),
-      0 8px 24px oklch(20% 0.02 var(--och-hue) / 10%);
-    --och-content-max: 72rem;
+      0 1px 2px var(--och-shadow-color),
+      0 10px 28px color-mix(in oklch, var(--och-shadow-color) 62%, transparent);
+    --och-content-max: 80rem;
+    --och-shell-sidebar-size: 16rem;
+    --och-control-min-block-size: 2.75rem;
+    --och-motion-fast: 150ms;
+    --och-motion-standard: 220ms;
   }
 
   @property --och-hue {
     syntax: "<number>";
     inherits: true;
-    initial-value: 252;
+    initial-value: 163.22;
   }
 
   [data-theme="light"] {
@@ -140,75 +235,199 @@
     min-block-size: 100dvh;
   }
 
-  :where(admin-app, user-app)::part(header),
-  :where(admin-app, user-app)::part(main),
-  :where(admin-app, user-app)::part(footer) {
-    padding-inline: max(var(--och-space-3), env(safe-area-inset-left));
+  :where(och-app-shell, admin-app, user-app)::part(sidebar) {
+    color: var(--och-color-text);
+    background: var(--och-color-surface-sidebar);
+    border-inline-end: var(--och-border-width) solid var(--och-color-border);
   }
 
-  :where(admin-app, user-app)::part(header) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--och-space-3);
-    padding-block: var(--och-space-2);
-    border-block-end: 1px solid var(--och-color-border);
+  :where(och-app-shell, admin-app, user-app)::part(header),
+  :where(och-app-shell, admin-app, user-app)::part(topbar),
+  :where(och-app-shell, admin-app, user-app)::part(main),
+  :where(och-app-shell, admin-app, user-app)::part(footer) {
+    padding-inline: var(--och-space-3);
   }
 
-  :where(admin-app, user-app)::part(main) {
-    inline-size: min(100%, var(--och-content-max));
-    min-block-size: calc(100dvh - 9rem);
-    margin-inline: auto;
-    padding-block: var(--och-space-4);
-  }
-
-  :where(admin-app, user-app)::part(footer) {
+  :where(och-app-shell, admin-app, user-app)::part(header) {
+    flex: none;
+    min-block-size: 4.5rem;
     padding-block: var(--och-space-3);
+    background: var(--och-color-surface-sidebar);
+    border-block-end: 1px solid var(--och-color-border);
+    border-inline-end: var(--och-border-width) solid var(--och-color-border);
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(navigation) {
+    padding: var(--och-space-2);
+    background: var(--och-color-surface-sidebar);
+    border-inline-end: var(--och-border-width) solid var(--och-color-border);
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(topbar) {
+    min-block-size: 4rem;
+    gap: var(--och-space-2);
+    padding-block: var(--och-space-1);
+    background: color-mix(in oklch, var(--och-color-surface) 88%, transparent);
+    border-block-end: var(--och-border-width) solid var(--och-color-border);
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(main) {
+    inline-size: min(100%, var(--och-content-max));
+    margin-inline: auto;
+    padding-block: var(--och-space-5);
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(footer) {
+    padding-block: var(--och-space-2);
     border-block-start: 1px solid var(--och-color-border);
   }
 }
 
 @layer components {
-  :where(admin-app, user-app)::part(skip-link) {
+  :where(och-app-shell, admin-app, user-app)::part(skip-link) {
     position: fixed;
     inset-block-start: var(--och-space-1);
     inset-inline-start: var(--och-space-1);
-    z-index: 1;
-    padding: var(--och-space-1) var(--och-space-2);
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--och-control-min-block-size);
+    padding-inline: var(--och-space-2);
     translate: 0 -200%;
     background: var(--och-color-surface-raised);
     border-radius: var(--och-radius);
     box-shadow: var(--och-shadow);
   }
 
-  :where(admin-app, user-app)::part(skip-link):focus {
+  :where(och-app-shell, admin-app, user-app)::part(skip-link):focus {
     translate: 0;
   }
 
-  :where(admin-app, user-app)::part(brand) {
-    font-weight: 700;
+  :where(och-app-shell, admin-app, user-app)::part(brand) {
+    display: grid;
+    gap: 0.125rem;
+    min-inline-size: 0;
   }
 
-  :where(admin-app, user-app)::part(summary),
-  :where(admin-app, user-app)::part(footer-note) {
+  :where(och-app-shell, admin-app, user-app)::part(brand-name) {
+    color: var(--och-color-text-strong);
+    font-size: var(--och-font-size-1);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(brand-accent) {
+    color: var(--och-color-brand);
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(brand-subtitle) {
+    color: var(--och-color-text-muted);
+    font-size: var(--och-font-size-caption);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(mobile-brand) {
+    display: none;
+    align-items: baseline;
+    gap: var(--och-space-0);
+    color: var(--och-color-text-strong);
+    font-size: var(--och-font-size-0);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(summary),
+  :where(och-app-shell, admin-app, user-app)::part(context),
+  :where(och-app-shell, admin-app, user-app)::part(footer-note) {
     color: var(--och-color-text-muted);
   }
 
-  :where(admin-app, user-app)::part(title) {
+  :where(och-app-shell, admin-app, user-app)::part(title) {
+    color: var(--och-color-text-strong);
     font-size: var(--och-font-size-2);
+    letter-spacing: -0.025em;
   }
 
   :where(admin-app, user-app)::part(navigation-list) {
-    display: flex;
-    gap: var(--och-space-2);
+    display: grid;
+    gap: var(--och-space-0);
     padding: 0;
     list-style: none;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(menu-button),
+  :where(och-app-shell, admin-app, user-app)::part(sidebar-close-button) {
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--och-control-min-block-size);
+    inline-size: var(--och-control-min-block-size);
+    padding: 0;
+    color: var(--och-color-text);
+    background: var(--och-color-surface-raised);
+    border: var(--och-border-width) solid var(--och-color-border-strong);
+    border-radius: var(--och-radius-small);
+    font-weight: 650;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(menu-button):hover,
+  :where(och-app-shell, admin-app, user-app)::part(sidebar-close-button):hover {
+    color: var(--och-color-brand-hover);
+    background: var(--och-color-surface-muted);
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(menu-icon),
+  :where(och-app-shell, admin-app, user-app)::part(sidebar-close-icon) {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    fill: none;
+    stroke: currentcolor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.75;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(menu-label),
+  :where(och-app-shell, admin-app, user-app)::part(sidebar-close-label) {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(navigation-backdrop) {
+    padding: 0;
+    background: var(--och-color-overlay);
+    border: 0;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(heading-group) {
+    display: grid;
+    gap: var(--och-space-1);
+    padding-block-end: var(--och-space-2);
+    border-block-end: var(--och-border-width) solid var(--och-color-border);
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(content) {
+    display: block;
+  }
+}
+
+@media (width < 48rem) {
+  :where(och-app-shell, admin-app, user-app)::part(mobile-brand) {
+    display: inline-flex;
   }
 }
 
 @media (prefers-contrast: more) {
   :root {
     --och-color-border: currentcolor;
+    --och-color-border-strong: currentcolor;
   }
 }
 
@@ -217,13 +436,53 @@
     scroll-behavior: smooth;
   }
 
-  :where(admin-app, user-app)::part(skip-link) {
-    transition: translate 180ms ease-out;
+  :where(och-app-shell, admin-app, user-app)::part(skip-link) {
+    transition: translate var(--och-motion-fast) ease-out;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(sidebar) {
+    transition: translate var(--och-motion-standard) ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --och-motion-fast: 0ms;
+    --och-motion-standard: 0ms;
   }
 }
 
 @media (forced-colors: active) {
-  :where(admin-app, user-app)::part(skip-link) {
+  :root {
+    --och-color-brand: LinkText;
+    --och-color-brand-hover: LinkText;
+    --och-color-brand-strong: CanvasText;
+    --och-color-accent: Highlight;
+    --och-color-surface: Canvas;
+    --och-color-surface-raised: Canvas;
+    --och-color-surface-muted: Canvas;
+    --och-color-surface-sidebar: Canvas;
+    --och-color-text: CanvasText;
+    --och-color-text-strong: CanvasText;
+    --och-color-text-muted: GrayText;
+    --och-color-border: CanvasText;
+    --och-color-border-strong: CanvasText;
+    --och-color-success: CanvasText;
+    --och-color-warning: CanvasText;
+    --och-color-danger: CanvasText;
+    --och-color-info: CanvasText;
+    --och-color-refund: CanvasText;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(skip-link),
+  :where(och-app-shell, admin-app, user-app)::part(menu-button),
+  :where(och-app-shell, admin-app, user-app)::part(sidebar-close-button),
+  :where(och-app-shell, admin-app, user-app)::part(sidebar) {
     border: 1px solid CanvasText;
+  }
+
+  :where(och-app-shell, admin-app, user-app)::part(navigation-backdrop) {
+    background: Canvas;
+    opacity: 0.75;
   }
 }
