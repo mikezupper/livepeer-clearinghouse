@@ -34,6 +34,24 @@ def request(
     )
 
 
+def signer_route_status_is_valid(path: str, status: int) -> bool:
+    """Accept only the fail-closed or live go-livepeer response for each route."""
+    signer_paths = {
+        "/generate-live-payment",
+        "/sign-orchestrator-info",
+        "/discover-orchestrators",
+    }
+    if path not in signer_paths:
+        return False
+    if status == 502:
+        return True
+    if path in {"/generate-live-payment", "/sign-orchestrator-info"}:
+        return status == 405
+    if path == "/discover-orchestrators":
+        return status in {200, 503}
+    return False
+
+
 def check_http(settings: Settings) -> None:
     for path in ("/", "/admin/", "/health/live", "/health/ready"):
         with request(path) as response:
@@ -42,20 +60,24 @@ def check_http(settings: Settings) -> None:
                 raise RuntimeError(f"smoke HTTP probe failed: {path}")
             if not response.headers.get("Content-Security-Policy"):
                 raise RuntimeError("edge security headers are missing")
-    # The keyless smoke intentionally omits remote-signer. Exact protocol paths
-    # must therefore reach the absent signer upstream (502), never the user SPA.
+    # A clean keyless smoke sees the absent signer upstream (502). If a default
+    # signer stack is already running, accept only its precise read responses.
+    # In either case, a user-SPA fallthrough (200 HTML) is rejected.
     for path in (
         "/generate-live-payment",
         "/sign-orchestrator-info",
         "/discover-orchestrators",
     ):
+        status = 0
         try:
             with request(path) as response:
                 response.read(1_048_577)
+                status = response.status
         except HTTPError as error:
-            if error.code == 502:
-                continue
-        raise RuntimeError(f"signer protocol route reached the wrong upstream: {path}")
+            status = error.code
+            error.close()
+        if not signer_route_status_is_valid(path, status):
+            raise RuntimeError(f"signer protocol route reached the wrong upstream: {path}")
     state = {
         "StateID": "smoke_invalid_state",
         "PMSessionID": "",
