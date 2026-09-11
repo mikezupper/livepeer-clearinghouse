@@ -363,7 +363,12 @@ def test_http_pages_audit_and_keeps_operational_responses_private() -> None:
     assert response.json()["page"]["next_cursor"]
     adapters = http.get("/v1/operations/adapters")
     assert adapters.status_code == 200 and adapters.headers["cache-control"] == "no-store"
-    assert adapters.json()[0]["ports"][0]["name"] == "identity"
+    manifest = adapters.json()[0]
+    assert manifest["ports"][0]["name"] == "identity"
+    assert "description" not in manifest
+    assert "python_entry_point" not in manifest
+    assert "http_bridge" not in manifest
+    assert "configuration_schema" not in manifest
 
 
 def test_http_auth_validation_scope_and_storage_errors_are_sanitized() -> None:

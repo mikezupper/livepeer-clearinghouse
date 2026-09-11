@@ -434,6 +434,7 @@ async def list_audit_events(
     operation_id="listAdapters",
     status_code=status.HTTP_200_OK,
     response_model=list[AdapterManifestResponse],
+    response_model_exclude_none=True,
     responses=account_responses(403),
     openapi_extra=COOKIE_SECURITY,
 )

@@ -21,6 +21,15 @@ describe("admin API boundary", () => {
     enabled: false, reason: "Normal operation",
     changed_at: "2026-09-09T12:00:00Z", actor_id: null
   }
+  const adapters = [{
+    manifest_version: "1.0",
+    name: "reference_distribution",
+    version: "0.1.0",
+    description: "Built-in Open Clearinghouse reference adapters active in this process.",
+    source: "builtin",
+    builtin: { selector: "reference_distribution" },
+    ports: [{ name: "identity", contract_version: "1.0", capabilities: ["resolve"] }]
+  }]
   const responses = new Map<string, unknown>([
     ["/v1/auth/session", session],
     ["/v1/tenants?limit=50", { items: [], page: { next_cursor: null } }],
@@ -36,7 +45,7 @@ describe("admin API boundary", () => {
     ["/v1/balances/account_12345678", { account_id: "account_12345678", posted: { amount: "75", unit: "wei" }, open_lease_exposure: { amount: "10", unit: "wei" }, available: { amount: "65", unit: "wei" } }],
     ["/v1/operations/metering-health", metering],
     ["/v1/operations/audit-events?limit=100", { items: [], page: { next_cursor: null } }],
-    ["/v1/operations/adapters", []],
+    ["/v1/operations/adapters", adapters],
     ["/v1/operations/kill-switch", killSwitch]
   ])
 
@@ -53,6 +62,7 @@ describe("admin API boundary", () => {
       if (Either.isRight(result)) {
         expect(result.right.balances[0]?.available.amount).toBe(65n)
         expect(result.right.metering?.status).toBe("ready")
+        expect(result.right.adapters?.[0]?.name).toBe("reference_distribution")
       }
       expect(fetcher).toHaveBeenCalledTimes(16)
     })
