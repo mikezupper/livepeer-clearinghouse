@@ -14,7 +14,7 @@ def load_schema(relative: str) -> dict[str, object]:
 class EventSchemaTests(unittest.TestCase):
     def test_raw_signer_schema_is_pinned_and_models_actual_batch_event(self) -> None:
         schema = load_schema("contracts/events/v1/go-livepeer-create-signed-ticket.schema.json")
-        self.assertIn("e8dcf7a34744d5cb6b65ba43c0d9160a3975ccc6", schema["description"])
+        self.assertIn("38eb47d12ab1d2d874fc4c7c061aa1900b7c0bad", schema["description"])
 
         data = schema["$defs"]["createSignedTicketData"]
         self.assertIn("num_tickets", data["required"])

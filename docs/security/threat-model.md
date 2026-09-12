@@ -2,108 +2,130 @@
 
 ## Scope and assumptions
 
-This model covers the reference Python API and consumer, PostgreSQL, Redpanda,
-unmodified go-livepeer remote signer, admin and user web applications, and the
-seven adapter ports. The signer, database, and broker are private services.
-TLS termination, host hardening, chain RPC correctness, and the operator's
-legal compliance remain deployment responsibilities.
+This model covers the four-service reference distribution: the edge, one
+Python core process containing the API and Kafka consumer, Redpanda, the
+unmodified pinned go-livepeer remote signer, durable SQLite and signer volumes,
+and the separate admin and user web applications served by the edge. The core
+is a single-node access and metering system, not a balance, billing, settlement,
+or high-availability system.
 
-The model uses spoofing, tampering, repudiation, information disclosure,
-denial of service, and elevation of privilege as review lenses. Financial
-integrity and bounded signer exposure are the highest-impact assets.
+Only the edge is published to the host. Core, SQLite, Redpanda, and signer
+administration remain private. TLS termination, host and container hardening,
+chain RPC correctness, custody funding limits, backups, and legal compliance
+remain deployment responsibilities. External storage and enterprise services
+are outside this reference trust boundary.
+
+The model uses spoofing, tampering, repudiation, information disclosure, denial
+of service, and elevation of privilege as review lenses. Signer custody,
+account isolation, authorization integrity, and honest attribution of received
+usage evidence are the highest-impact assets.
 
 ## Assets and actors
 
 | Asset | Required property |
 | --- | --- |
-| Signer key and password | Confidential, non-exportable through the clearinghouse, rotatable |
-| Credentials, OTPs, OAuth sessions | Confidential, scoped, expiring, replay-resistant |
-| Account balances and open exposure | Correct under concurrency and dependency failure |
-| Usage, charges, grants, ledger, audit | Append-only, attributable, idempotent, retained |
-| Tenant identity and personal data | Isolated, minimized, erasable where legally permitted |
-| Adapter configuration and secrets | Startup-validated, authenticated, never logged |
+| Signer key and password | Confidential, mounted read-only, absent from the core and web images |
+| OTPs, sessions, OAuth state, API and workload credentials | Keyed-digest storage, bounded lifetime or revocation, no logging |
+| Personal account and workload data | Scoped to the authenticated account |
+| Price observations and workload quotes | Exact, attributable, immutable after workload creation |
+| Authorization records | Fail-closed, state-bound, idempotent |
+| Signer usage evidence | Strictly decoded, deduplicated, honestly marked matched or unmatched |
+| Global stop | Administrator-only and evaluated for every new authorization |
+| Configuration and volumes | Startup-validated, least privilege, backed up by the operator |
 
-Actors are credential holders, tenant administrators, clearinghouse operators,
-signer instances, adapter operators, and unauthenticated internet clients. A
-compromised browser, gateway, adapter, broker client, or network peer is treated
-as hostile. PostgreSQL and the configured signer identity are authoritative
-only after authenticated connection and boundary decoding.
+Actors are authenticated users, the configured administrator, SDK credential
+holders, the remote signer, broker clients, discovery endpoints, identity and
+email providers, and unauthenticated internet clients. A compromised browser,
+SDK client, discovery endpoint, broker producer, signer, or network peer is
+treated as hostile. SQLite is authoritative only after schema validation and
+transactional reads; Kafka payload metadata never authenticates a producer.
 
 ## Entry points and trust transitions
 
-| Entry point | Trust transition | Required controls |
+| Entry point | Trust transition | Implemented controls |
 | --- | --- | --- |
-| Browser APIs | Internet to clearinghouse | TLS, origin policy, CSRF defense, secure cookies, rate limits, schema decoding |
-| Email OTP request/verify | Internet to identity | Uniform responses, hashed codes, attempt and send limits, short expiry |
-| Google/GitHub callback | Provider to identity | State, PKCE, OIDC nonce where applicable, exact redirect and issuer checks |
-| Identity invitation | Administrator to verified source identity | Opaque source binding, CSRF, single-use secret hash, scope/role/issuer snapshots, supersession, transactional revalidation |
-| Operator bootstrap | Deployment secret to identity | Zero-operator table lock, paired secret configuration, exact idempotent fingerprint, session revocation, fail-closed conflict |
-| Signer authorization callback | Private signer to API | Dedicated shared secret or mTLS, timeout, every-call evaluation, stable server-owned `auth_id` |
-| Kafka consumer | Broker to metering | Broker authentication, configured producer identity, schema decoding, durable quarantine |
-| Admin API | Operator browser to core | Explicit operator role, CSRF defense, reason, confirmation, immutable audit |
-| Python adapter entry point | Trusted image to core | Immutable install, manifest/version/capability checks, no environment-driven imports |
-| HTTP adapter bridge | Remote service to core | TLS/mTLS or bearer secret, deadlines, typed errors, circuit bounds |
+| Browser APIs | Internet through edge to core | Exact Origin allowlist, same-site HTTP-only session cookie, matching CSRF cookie/header for mutations, schema decoding, private response caching disabled |
+| Email OTP request and verify | Internet to Resend-compatible delivery and core | Normalized email, six-digit code, keyed digest, ten-minute default expiry, five-attempt default, generic invalid-code response |
+| Google or GitHub callback | Provider to core | Disabled unless fully configured, authorization code with PKCE, one-shot expiring state, exact state cookie, Google nonce validation, verified provider email |
+| SDK API credential | Client to core | Opaque one-time value, keyed digest, account ownership, revocation |
+| Discovery endpoints | Network to core | HTTP boundary normalization, bounded observation lifetime, exact rational price, immutable workload snapshot |
+| Signer authorization callback | Private signer through edge to core | Independent bearer secret, constant-time comparison, forwarded user token treated separately, every-call global-stop and workload evaluation, `expiry: 0` |
+| Kafka consumer | Broker to core | Dedicated configured topic/group, strict pinned event decoder, transport identity deduplication, commit after ingestion |
+| Admin API | Configured administrator browser to core | Session identity derived from configured normalized email, CSRF protection on mutation, no client-selected role |
+| SQLite volume | Core process to durable state | Private mount, foreign keys, WAL, busy timeout, transactional initialization, serialized writer boundary |
 
-Forwarded headers inside the signer callback body authenticate the user session,
-not the signer transport. Kafka envelope `gateway` values are attribution data,
-not producer authentication.
+Forwarded headers inside the signer callback body carry the workload credential;
+they do not authenticate the signer transport. Kafka `gateway` fields are
+attribution data, not producer authentication. Broker network policy and topic
+ACLs are deployment controls when the private reference broker is replaced.
 
 ## Threats, mitigations, and verification
 
-| Threat | Impact | Mitigation | Verification owner |
-| --- | --- | --- | --- |
-| Tenant identifier substitution or object enumeration | Cross-tenant disclosure/mutation | Resolve tenant scope from authenticated principal; include tenant predicates in repositories; return indistinguishable not-found results | `och-u8d.6`, `.10`, `.11`, `.13` |
-| Credential database theft | Account takeover | Store only memory-hard or keyed hashes; reveal secrets once; prefix lookup plus constant-time verification; rotation and revocation | `och-u8d.6`, `.13` |
-| OTP guessing, flooding, or account discovery | Account takeover/abuse | Random six-or-more digit code, keyed hash, short expiry, attempt/send/IP/address limits, uniform accepted response | `och-u8d.5`, `.13` |
-| OAuth login CSRF, code interception, or account confusion | Account takeover | State, PKCE, nonce for OIDC, exact issuer/audience/redirect validation, stable provider subject, explicit account-link policy | `och-u8d.5`, `.13` |
-| Browser session theft or fixation | Privilege theft | Rotating opaque server session, Secure/HttpOnly/SameSite cookie, renewal after auth, logout revocation, inactivity and absolute expiry | `och-u8d.5`, `.13` |
-| CSRF on grants, caps, credentials, or kill switch | Financial/admin mutation | SameSite cookie plus origin-bound CSRF token; no state-changing GET; explicit action reason | `och-u8d.5`, `.6`, `.10`, `.13` |
-| Signer webhook spoofing | Unauthorized reservation or denial | Private network and authenticated callback; signer ID comes from transport configuration; reject unknown identities | `och-u8d.7`, `.12`, `.16` |
-| Forwarded `Signer-Auth-Id` spoofing | Misattributed spend | Always return clearinghouse-owned stable `auth_id`; never trust the forwarded value as identity | `och-u8d.7`, `.13` |
-| Cached signer allow bypasses suspension/kill switch | Unbounded interval of spend | Return `expiry: 0` on every successful callback and test repeated calls | `och-u8d.7`, `.19` |
-| State replay, fork, or concurrent sequence | Duplicate/overspend | Serialize `(signer_id, StateID)`; unique sequence receipt; hash state; reject non-identical reuse and out-of-order state | `och-u8d.7`, `.8`, `.13` |
-| Kafka duplication, reordering, poison input, or drop | Double charge or missing charge | Transport dedupe, semantic sequence checks, transactional settlement, durable quarantine, pending holds, reconciliation | `och-u8d.8`, `.18`, `.19` |
-| Fee/quantity overflow or float drift | Financial corruption | Decimal-string wire values, unbounded integers/exact rationals, bounded input sizes, conservative reservation, signer fee preservation | `och-u8d.3`, `.7`, `.8`, `.13` |
-| Ledger or idempotency race | Overspend/double posting | Database serialization and unique constraints; balanced append-only transaction; conflicting key reuse rejected | `och-u8d.6`, `.7`, `.8`, `.13` |
-| Signer key copied into API/image/log | Wallet compromise | Clearinghouse never accepts decrypted key material; encrypted read-only signer mount or secret injection; redaction tests | `och-u8d.12`, `.16`, `.13` |
-| Malicious or incompatible adapter | Data theft/corruption | Trusted immutable installs only; explicit wiring; version/capability negotiation; least-privilege credentials; conformance tests | `och-u8d.3`, `.13` |
-| Resource exhaustion | Availability loss | Request/body/list bounds, per-identity/IP rate limits, DB pool limits, bounded queue/concurrency, deadlines, load tests | `och-u8d.4`, `.5`, `.8`, `.13`, `.19` |
-| Audit deletion or forged repudiation | Unprovable operator action | Append-only audit rows with actor, target, reason, request ID and time; restricted DB role; backup verification | `och-u8d.6`, `.18`, `.19` |
-| Supply-chain replacement | Code/key compromise | Lockfiles, pinned images/actions, review, CodeQL, dependency audit, image scan, SBOM, provenance and checksums | `och-u8d.13` |
+| Threat | Impact | Current mitigation and verification boundary |
+| --- | --- | --- |
+| Account identifier substitution or object enumeration | Cross-account disclosure or mutation | Account scope comes from the authenticated browser session or SDK credential; workload and credential mutations verify ownership; boundary tests exercise cross-account denial |
+| Credential database theft | Account or workload takeover | Only keyed digests are stored for OTP, session, CSRF, API, OAuth-state, nonce, and workload secrets; plaintext API/workload credentials are returned once |
+| OTP guessing or replay | Account takeover | Six random digits, keyed digest, bounded expiry and attempts, challenge consumption on success; deployment edge rate limiting remains required for Internet exposure |
+| Email enumeration or OTP flooding | Privacy loss or delivery abuse | Request returns an empty accepted response; the core does not yet provide IP/address send throttling, so production edge/provider controls are required |
+| OAuth login CSRF, interception, or account confusion | Account takeover | PKCE, random one-shot state bound to an HTTP-only cookie, ten-minute flow expiry, Google nonce check, stable provider flow and verified email requirement |
+| Browser session theft or CSRF | Account/admin mutation | Opaque expiring session, Secure cookie required in production, SameSite=Lax, exact allowed Origin and double-submit CSRF value checked against the stored digest |
+| SDK credential theft | Account-scoped API use | Opaque scoped credential, keyed digest and revocation; clients must protect the one-time value and use TLS |
+| Signer webhook spoofing | Unauthorized signer decision | Independent webhook bearer secret, constant-time comparison, private topology, and no reliance on forwarded identity headers |
+| Forwarded workload-token spoofing | Unauthorized spend | Token must resolve to an active, unexpired workload; failed lookup denies without revealing account data |
+| Cached allow bypasses revocation or stop | Continued authorization | Every success returns `expiry: 0`; the global stop and workload state are evaluated on every callback |
+| State rebinding or repeated authorization | Misattribution | First success binds one workload to one signer state; another state is denied; `(signer_id, state_id, sequence_number)` is unique |
+| Discovery tampering or stale price | Incorrect authorization ceiling | Observations expire; workload creation copies exact runner, capability and price terms; authorization denies price increases and selected-orchestrator mismatch. TLS and discovery-source trust remain operator responsibilities |
+| Kafka duplicate or unrelated input | Duplicate or corrupt usage | Strict pinned event decoding, unrelated-type filtering, deterministic usage identity and unique transport event ID |
+| Kafka loss, spoofing, or poison input | Missing, false, or delayed usage evidence | Private dedicated broker by default; external deployments must authenticate producers. The core reports only received evidence and never claims billing completeness; rejected poison input must be diagnosed from core readiness/logging |
+| Unknown `auth_id` | Cross-account attribution | Evidence is retained as `unmatched` without account, user, workload, or authorization ownership |
+| Fee, quantity, or price rounding drift | Incorrect cost display | Non-negative integers and exact rational prices; quote-derived cost uses integer ceiling; signer-reported fee remains a separately labelled value |
+| SQLite corruption, theft, or concurrent writers | Availability loss or personal-data disclosure | Private persistent volume, one supervised writer process, transactional initialization, integrity-checked restore and operator-controlled filesystem permissions/encryption |
+| Signer key copied into core, image, or logs | Wallet compromise | Core never accepts custody material; encrypted V3 key and password are external read-only mounts. The pinned signer may log its RPC URL, so credential-free URLs and protected logs are required |
+| Resource exhaustion | Availability loss | Schema bounds, workload TTL bounds and the single-writer architecture limit individual operations; production edge request/body/concurrency limits and capacity monitoring remain operator controls |
+| Supply-chain replacement | Code or key compromise | Lockfiles, pinned actions/images, required review and quality checks, dependency/CodeQL scans, image scans, SBOMs, signatures, attestations, and release checksums |
 
 ## Authorization defaults
 
-The system denies when identity, policy, store, ledger, signer binding, or
-reservation calculation is unavailable or ambiguous. Kill-switch evaluation
-and account/session/lease status occur inside the same serialized decision as
-the reservation. Error bodies use stable codes and contain no account-existence
-or secret detail.
+The core denies signer authorization when the webhook credential, workload
+credential, global stop, workload state or expiry, quote ceiling, selected
+orchestrator, or existing state binding is invalid or ambiguous. It returns no
+cache interval. The core does not reserve funds, enforce a balance, or claim
+that a successful decision guarantees later Kafka evidence.
 
-Operator and tenant-administrator powers are distinct. Only operators can
-change the global kill switch, platform adapter configuration, or cross-tenant
-grants. Tenant administrators cannot grant themselves operator access or move
-value between tenants.
+Admin access is computed from `CLEARINGHOUSE_ADMIN_EMAIL` when the identity is
+resolved. The core has no tenant administrator, invitation, role hierarchy,
+bootstrap operator, grants, or runtime adapter catalog. Extension ports are
+selected explicitly by a deployment composition root; external layers do not
+receive direct access to core tables.
 
 ## Accepted residual risks
 
-- Unmodified go-livepeer can drop its asynchronous Kafka observation. Pending
-  reservations and sequence reconciliation expose this; the final event of a
-  session can require operator resolution.
-- A compromised signer can sign outside the clearinghouse entirely. Network,
-  key custody, wallet monitoring, and funding limits constrain that operator
-  risk; this service cannot cryptographically prevent it.
-- Email account or OAuth-provider compromise defeats that authentication
-  factor. Operators may place stronger external identity adapters in front of
-  high-value deployments.
-- External chain RPC and orchestrator pricing can be incorrect or unavailable.
-  Price ceilings, pinned network configuration, health checks, and limited
-  signer funding bound but do not eliminate the risk.
+- Unmodified go-livepeer produces Kafka observations asynchronously. Broker
+  failure, process loss, or queue exhaustion can lose the final event. The core
+  exposes received, unmatched, and divergent evidence but cannot reconstruct an
+  event it never received.
+- A compromised signer can sign outside the Clearinghouse entirely. Network
+  isolation, encrypted custody, wallet monitoring, and funding limits constrain
+  this operator risk; the core cannot cryptographically prevent it.
+- A compromised email account or OAuth provider defeats that authentication
+  factor. High-value deployments may add stronger identity controls outside the
+  core's versioned boundary.
+- The reference broker and SQLite profile are single-node. A process, disk, or
+  host failure can interrupt authorization and metering until recovery.
+- External chain RPC and discovery data can be incorrect or unavailable.
+  Frozen price ceilings, selected-orchestrator checks, short observation expiry,
+  health checks, and limited signer funding bound but do not eliminate the risk.
+- The core has no built-in Internet-facing rate limiter, automated backup
+  service, long-term audit system, or billing reconciliation. Operators must
+  supply these controls where their risk model requires them.
 
-These risks must appear in deployment documentation and operator-facing health;
-they are not represented as guarantees in product copy.
+These residual risks must appear in deployment decisions and operator-facing
+monitoring. Product copy must not present received usage evidence as complete
+settlement or the single-node profile as highly available.
 
 ## Review triggers
 
-Re-review this model when a trust boundary, authentication method, payment
-shape, signer version, adapter source, public endpoint, custody mechanism,
-financial unit, or retention category changes, and after any relevant incident.
+Re-review this model when a trust boundary, authentication method, public
+contract, storage implementation, signer version, Kafka schema, custody
+mechanism, price unit, or exposed endpoint changes, and after any relevant
+incident.

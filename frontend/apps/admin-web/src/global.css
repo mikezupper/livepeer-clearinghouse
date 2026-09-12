@@ -15,97 +15,62 @@
     );
   }
 
-  admin-app::part(section) {
+  admin-app::part(page) {
     container-type: inline-size;
     margin-block-start: var(--och-space-4);
   }
 
-  admin-app::part(metrics) {
+  admin-app::part(metrics),
+  admin-app::part(card-grid) {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(10.5rem, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
     gap: var(--och-space-2);
   }
 
-  admin-app::part(controls) {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
-    gap: var(--och-space-3);
+  admin-app::part(page-header) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--och-space-2);
   }
 
   admin-app::part(table-scroll) {
-    display: block;
+    max-inline-size: 100%;
     overflow-inline: auto;
-  }
-
-  admin-app::part(table) {
-    inline-size: 100%;
-    border-collapse: collapse;
-  }
-
-  admin-app::part(form),
-  admin-app::part(dialog-form) {
-    display: grid;
-    gap: var(--och-space-2);
-  }
-
-  admin-app::part(navigation-menu),
-  admin-app::part(navigation-list),
-  admin-app::part(navigation-group) {
-    display: grid;
-  }
-
-  admin-app::part(navigation-menu) {
-    gap: var(--och-space-1);
-    padding-block: var(--och-space-2);
-  }
-
-  admin-app::part(navigation-group) {
-    gap: var(--och-space-0);
-    padding-block-end: var(--och-space-2);
+    scrollbar-gutter: stable;
   }
 
   admin-app::part(navigation-list) {
+    display: grid;
     gap: var(--och-space-0);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  admin-app::part(navigation-link),
-  admin-app::part(scope),
-  admin-app::part(session-actions) {
-    display: flex;
-    align-items: center;
-  }
-
   admin-app::part(navigation-link) {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    align-items: center;
     gap: var(--och-space-2);
     min-block-size: var(--admin-control-size);
-    padding-inline: var(--och-space-2);
-  }
-
-  admin-app::part(scope),
-  admin-app::part(session-actions) {
-    flex-wrap: wrap;
-    gap: var(--och-space-2);
-  }
-
-  admin-app::part(session-actions) {
-    justify-content: end;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    padding: var(--och-space-1) var(--och-space-2);
   }
 }
 
 @layer admin-components {
-  admin-app::part(navigation-group-label) {
-    padding: var(--och-space-2) var(--och-space-2) var(--och-space-0);
+  admin-app::part(navigation-heading),
+  admin-app::part(eyebrow) {
     color: var(--och-color-text-muted);
     font-size: var(--och-font-size-caption);
-    font-weight: 650;
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  admin-app::part(navigation-heading) {
+    padding: var(--och-space-2) var(--och-space-2) var(--och-space-1);
   }
 
   admin-app::part(navigation-link) {
@@ -121,9 +86,14 @@
       border-color var(--admin-motion-duration) ease;
   }
 
-  admin-app::part(navigation-link):hover {
+  admin-app::part(navigation-link):hover,
+  admin-app::part(navigation-link):focus-visible {
     color: var(--och-color-text-strong);
     background: color-mix(in oklch, var(--och-color-text) 4%, transparent);
+  }
+
+  admin-app::part(navigation-link):active {
+    color: var(--och-color-brand-strong);
   }
 
   admin-app::part(navigation-link-active) {
@@ -133,140 +103,35 @@
   }
 
   admin-app::part(navigation-icon) {
-    flex: 0 0 1.2rem;
-    inline-size: 1.2rem;
-    block-size: 1.2rem;
-    stroke-width: 1.6;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
-  admin-app::part(scope),
-  admin-app::part(mutation-status) {
-    color: var(--och-color-text-muted);
-    font-size: var(--och-font-size-small);
+  admin-app::part(navigation-label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  admin-app::part(mutation-status) {
-    min-block-size: 1.5lh;
-  }
-
-  admin-app::part(metric),
-  admin-app::part(form-card),
-  admin-app::part(table-section),
-  admin-app::part(surface),
-  admin-app::part(emergency) {
+  admin-app::part(surface) {
+    padding: var(--och-space-3);
     background: var(--admin-surface-quiet);
     border: var(--och-border-width) solid var(--och-color-border);
     border-radius: var(--och-radius);
     box-shadow: 0 1px 2px var(--och-shadow-color);
   }
 
-  admin-app::part(metric),
-  admin-app::part(form-card),
-  admin-app::part(surface),
-  admin-app::part(emergency) {
-    padding: var(--och-space-3);
-  }
-
-  admin-app::part(section-heading) {
-    color: var(--och-color-text-strong);
-    font-size: var(--och-font-size-1);
-  }
-
-  admin-app::part(metric-label),
-  admin-app::part(table-caption) {
-    color: var(--och-color-text-muted);
-    font-size: var(--och-font-size-small);
-  }
-
-  admin-app::part(metric-value) {
-    margin-inline-start: 0;
-    color: var(--och-color-text-strong);
-    font-family: var(--och-font-mono);
-    font-size: var(--och-font-size-1);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  admin-app::part(table-section) {
-    overflow: clip;
-  }
-
-  admin-app::part(table) {
-    min-inline-size: 42rem;
-    font-size: var(--och-font-size-small);
-    font-variant-numeric: tabular-nums;
-  }
-
-  admin-app::part(table-caption) {
+  admin-app::part(notice) {
     padding: var(--och-space-2) var(--och-space-3);
-    text-align: start;
-  }
-
-  admin-app::part(table-cell) {
-    padding: var(--och-space-2) var(--och-space-3);
-    text-align: start;
-    border-block-end: 1px solid
-      color-mix(in oklch, var(--och-color-border) 72%, transparent);
-  }
-
-  admin-app::part(column-header) {
-    color: var(--och-color-text-muted);
-    font-size: var(--och-font-size-caption);
-    font-weight: 650;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  admin-app::part(row-header) {
-    color: var(--och-color-text-strong);
-    font-weight: 560;
-  }
-
-  admin-app::part(table-row):hover {
-    background: color-mix(in oklch, var(--och-color-text) 2.5%, transparent);
-  }
-
-  admin-app::part(form-card),
-  admin-app::part(dialog-form) {
-    color: var(--och-color-text-muted);
-  }
-
-  admin-app::part(form) {
-    margin-block-start: var(--och-space-3);
-    color: var(--och-color-text);
-  }
-
-  admin-app::part(button),
-  admin-app::part(quiet-button) {
-    min-block-size: var(--admin-control-size);
-    padding-inline: var(--och-space-2);
-    color: var(--och-color-text);
-    background: var(--och-color-surface-muted);
+    color: var(--och-color-info);
+    background: var(--och-color-info-soft);
     border: var(--och-border-width) solid var(--och-color-border);
     border-radius: var(--och-radius-small);
-    transition:
-      opacity var(--admin-motion-duration) ease,
-      border-color var(--admin-motion-duration) ease;
-  }
-
-  admin-app::part(button):hover,
-  admin-app::part(quiet-button):hover {
-    border-color: var(--och-color-border-strong);
-  }
-
-  admin-app::part(dialog) {
-    max-inline-size: min(36rem, calc(100% - 2 * var(--och-space-3)));
-    padding: var(--och-space-4);
-    color: var(--och-color-text);
-    background: var(--och-color-surface-raised);
-    border: var(--och-border-width) solid var(--och-color-border-strong);
-    border-radius: var(--och-radius);
-    box-shadow: var(--och-shadow);
-  }
-
-  admin-app::part(dialog)::backdrop {
-    background: var(--och-color-backdrop);
-    backdrop-filter: blur(0.25rem);
   }
 }
 
@@ -277,14 +142,14 @@
     inline-size: fit-content;
     padding: 0.15rem var(--och-space-1);
     color: var(--och-color-text-muted);
+    background: var(--och-color-surface-muted);
+    border: var(--och-border-width) solid var(--och-color-border);
+    border-radius: 100vmax;
     font-family: var(--och-font-sans);
     font-size: var(--och-font-size-caption);
     font-weight: 650;
     line-height: 1.25;
     text-transform: capitalize;
-    border: var(--och-border-width) solid var(--och-color-border);
-    border-radius: 100vmax;
-    background: var(--och-color-surface-muted);
   }
 
   admin-app::part(badge-success) {
@@ -297,45 +162,18 @@
     );
   }
 
-  admin-app::part(badge-info) {
-    color: var(--och-color-info);
-    background: var(--och-color-info-soft);
-    border-color: color-mix(in oklch, var(--och-color-info) 28%, transparent);
-  }
-
-  admin-app::part(badge-warning) {
-    color: var(--och-color-warning);
-    background: var(--och-color-warning-soft);
-    border-color: color-mix(
-      in oklch,
-      var(--och-color-warning) 28%,
-      transparent
-    );
-  }
-
-  admin-app::part(badge-danger),
-  admin-app::part(danger-button) {
+  admin-app::part(badge-danger) {
     color: var(--och-color-danger);
     background: var(--och-color-danger-soft);
     border-color: color-mix(in oklch, var(--och-color-danger) 36%, transparent);
-  }
-
-  admin-app::part(danger-panel) {
-    border-color: color-mix(
-      in oklch,
-      var(--och-color-danger) 42%,
-      var(--och-color-border)
-    );
   }
 }
 
 @media (forced-colors: active) {
   admin-app::part(navigation-link-active),
-  admin-app::part(form-card),
-  admin-app::part(table-section),
-  admin-app::part(dialog),
-  admin-app::part(badge),
-  admin-app::part(danger-panel) {
+  admin-app::part(surface),
+  admin-app::part(notice),
+  admin-app::part(badge) {
     border: 1px solid CanvasText;
   }
 }

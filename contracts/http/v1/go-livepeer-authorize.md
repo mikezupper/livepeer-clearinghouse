@@ -3,15 +3,15 @@
 The normative wire schema is the
 `POST /v1/compat/go-livepeer/authorize` operation in `contracts/openapi.yaml`.
 It is pinned to go-livepeer commit
-`e8dcf7a34744d5cb6b65ba43c0d9160a3975ccc6`.
+`v0.9.2` (`38eb47d12ab1d2d874fc4c7c061aa1900b7c0bad`).
 
-- Authenticate the signer connection using configured callback headers or
-  mTLS. Headers nested in the JSON body are forwarded gateway input and do not
+- Authenticate the signer connection with the configured bearer webhook secret.
+  Headers nested in the JSON body are forwarded gateway input and do not
   authenticate the signer.
-- The body is `{headers, state}`. State property names preserve Go's PascalCase
-  spelling. `LastUpdate` must retain RFC3339Nano precision; `Balance` is the
-  callback state's exact rational string and is not the Kafka event's rounded
-  `session_balance`.
+- The body is `{headers, state}`. The core consumes the Go state fields
+  `StateID`, `PMSessionID`, `OrchestratorAddress`, `InitialPricePerUnit`,
+  `InitialPixelsPerUnit`, `SequenceNumber`, and optional `AuthID`; other pinned
+  go-livepeer state fields are ignored.
 - Valid application decisions always use transport HTTP 200. The JSON `status`
   is the status go-livepeer returns to its caller. A non-200 callback transport
   status is treated by go-livepeer as an internal failure.
@@ -19,8 +19,8 @@ It is pinned to go-livepeer commit
   `auth_id` and `expiry: 0`. Omitting the identity permits fallback to an
   untrusted forwarded `Signer-Auth-Id`; nonzero expiry bypasses callbacks until
   cached authorization expires.
-- The reference adapter accepts only `live`, `lv2v`, and `fixed` state types.
-  Unsupported or ambiguous shapes are denied in the JSON response.
-- Authorization serializes reservation identity
-  `(signer_id, StateID, SequenceNumber)` and atomically moves a conservative
-  amount from lease available value to pending value before allowing signing.
+- Authorization evaluates the global stop, workload credential, workload
+  status and expiry, frozen price ceiling, selected orchestrator, and existing
+  state binding in one store transaction. The first successful call binds the
+  workload and authorization identity to `StateID`; a later call for another
+  state fails closed. The core does not reserve funds or maintain balances.

@@ -60,25 +60,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - component: backend
-            image: ghcr.io/livepeer/clearinghouse-backend
+          - component: core
+            image: ghcr.io/livepeer/clearinghouse-core
             dockerfile: deploy/backend.Dockerfile
             build_args: ""
-          - component: admin-web
-            image: ghcr.io/livepeer/clearinghouse-admin-web
-            dockerfile: deploy/frontend.Dockerfile
-            build_args: APP=admin-web
-          - component: user-web
-            image: ghcr.io/livepeer/clearinghouse-user-web
-            dockerfile: deploy/frontend.Dockerfile
-            build_args: APP=user-web
           - component: edge
             image: ghcr.io/livepeer/clearinghouse-edge
             dockerfile: deploy/edge.Dockerfile
-            build_args: ""
-          - component: ops
-            image: ghcr.io/livepeer/clearinghouse-ops
-            dockerfile: deploy/ops/Dockerfile
             build_args: ""
           - component: remote-signer
             image: ghcr.io/livepeer/clearinghouse-remote-signer

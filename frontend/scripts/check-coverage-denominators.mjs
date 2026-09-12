@@ -5,11 +5,11 @@ import { join, relative, resolve } from "node:path"
 export const coverageUnits = [
   {
     name: "admin-web", roots: ["apps/admin-web/src"], reports: ["apps/admin-web/coverage/coverage-final.json"],
-    minimum: { lines: 250, statements: 250, functions: 100, branches: 150 }
+    minimum: { lines: 90, statements: 125, functions: 50, branches: 100 }
   },
   {
     name: "user-web", roots: ["apps/user-web/src"], reports: ["apps/user-web/coverage/coverage-final.json"],
-    minimum: { lines: 300, statements: 300, functions: 100, branches: 200 }
+    minimum: { lines: 150, statements: 200, functions: 70, branches: 140 }
   },
   {
     name: "contracts", roots: ["packages/contracts/src"], reports: ["packages/contracts/coverage/coverage-final.json"],

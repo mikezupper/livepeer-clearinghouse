@@ -11,12 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_REPOSITORY = "https://github.com/livepeer/clearinghouse"
 PROJECT_IMAGES = frozenset(
     {
-        "ghcr.io/livepeer/clearinghouse-admin-web",
-        "ghcr.io/livepeer/clearinghouse-backend",
+        "ghcr.io/livepeer/clearinghouse-core",
         "ghcr.io/livepeer/clearinghouse-edge",
-        "ghcr.io/livepeer/clearinghouse-ops",
         "ghcr.io/livepeer/clearinghouse-remote-signer",
-        "ghcr.io/livepeer/clearinghouse-user-web",
     }
 )
 BADGES = {
@@ -48,32 +45,32 @@ BADGES = {
 }
 COMPOSE_ONLY_CONFIGURATION = frozenset(
     {
-        "CLEARINGHOUSE_ADMIN_IMAGE",
-        "CLEARINGHOUSE_BACKEND_IMAGE",
-        "CLEARINGHOUSE_BACKEND_TEST_IMAGE",
+        "CLEARINGHOUSE_CORE_IMAGE",
         "CLEARINGHOUSE_EDGE_IMAGE",
-        "CLEARINGHOUSE_OPS_IMAGE",
         "CLEARINGHOUSE_SIGNER_IMAGE",
-        "CLEARINGHOUSE_TEST_GID",
-        "CLEARINGHOUSE_TEST_UID",
-        "CLEARINGHOUSE_USER_IMAGE",
-        "OPS_BACKUP_RETENTION_UNTIL",
     }
 )
 DOCUMENTED_RUNTIME_CONFIGURATION = frozenset(
     {
-        "CLEARINGHOUSE_AUTH_OAUTH_ATTEMPT_LIMIT",
-        "CLEARINGHOUSE_AUTH_OAUTH_ATTEMPT_WINDOW_SECONDS",
-        "CLEARINGHOUSE_AUTH_OTP_MAX_ATTEMPTS",
-        "CLEARINGHOUSE_AUTH_OTP_SEND_LIMIT",
-        "CLEARINGHOUSE_AUTH_OTP_SEND_WINDOW_SECONDS",
-        "CLEARINGHOUSE_AUTH_OTP_TTL_SECONDS",
-        "CLEARINGHOUSE_AUTH_OTP_VERIFY_LIMIT",
-        "CLEARINGHOUSE_AUTH_OTP_VERIFY_WINDOW_SECONDS",
-        "CLEARINGHOUSE_AUTH_SESSION_ABSOLUTE_TTL_SECONDS",
-        "CLEARINGHOUSE_AUTH_SESSION_INACTIVITY_SECONDS",
-        "CLEARINGHOUSE_AUTH_SESSION_TTL_SECONDS",
-        "CLEARINGHOUSE_IDENTITY_INVITATION_TTL_SECONDS",
+        "CLEARINGHOUSE_ADMIN_EMAIL",
+        "CLEARINGHOUSE_ALLOWED_ORIGINS",
+        "CLEARINGHOUSE_AUTH_GITHUB_CLIENT_ID",
+        "CLEARINGHOUSE_AUTH_GITHUB_CLIENT_SECRET",
+        "CLEARINGHOUSE_AUTH_GITHUB_ENABLED",
+        "CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_ID",
+        "CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_SECRET",
+        "CLEARINGHOUSE_AUTH_GOOGLE_ENABLED",
+        "CLEARINGHOUSE_AUTH_PEPPER",
+        "CLEARINGHOUSE_AUTH_RESEND_API_KEY",
+        "CLEARINGHOUSE_AUTH_RESEND_API_URL",
+        "CLEARINGHOUSE_AUTH_RESEND_FROM",
+        "CLEARINGHOUSE_COOKIE_SECURE",
+        "CLEARINGHOUSE_DISCOVERY_TTL_SECONDS",
+        "CLEARINGHOUSE_DISCOVERY_URLS",
+        "CLEARINGHOUSE_ENVIRONMENT",
+        "CLEARINGHOUSE_PUBLIC_URL",
+        "CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET",
+        "CLEARINGHOUSE_WORKLOAD_PEPPER",
     }
 )
 REQUIRED_ROOT_DOCUMENTS = frozenset(
@@ -130,7 +127,9 @@ def public_markdown_files(root: Path) -> tuple[Path, ...]:
     root_docs = sorted(root.glob("*.md"))
     docs = sorted(path for path in (root / "docs").rglob("*.md") if "references" not in path.parts)
     github_docs = sorted((root / ".github").rglob("*.md"))
-    return tuple(root_docs + docs + github_docs)
+    contract_docs = sorted((root / "contracts").rglob("*.md"))
+    component_docs = [root / "backend" / "README.md"]
+    return tuple(root_docs + docs + github_docs + contract_docs + component_docs)
 
 
 def _clean_target(target: str) -> str:
@@ -193,8 +192,7 @@ def _configuration_errors(root: Path, readme: str) -> list[str]:
     ]
 
     compose_source = "\n".join(
-        (root / relative).read_text(encoding="utf-8")
-        for relative in ("compose.yaml", "deploy/ops/restore.compose.yaml")
+        (root / relative).read_text(encoding="utf-8") for relative in ("compose.yaml",)
     )
     compose_names = set(COMPOSE_ENV_RE.findall(compose_source))
     unexplained = compose_names - env_names - COMPOSE_ONLY_CONFIGURATION

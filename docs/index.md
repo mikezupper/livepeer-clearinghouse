@@ -11,6 +11,7 @@ knowledge. `AGENTS.md` is its map; Beads is the only source of work status.
 ## Design
 
 - [Design documents index](design-docs/index.md)
+- [Simplified core contracts](design-docs/simple-core.md)
 - [Core beliefs and invariants](design-docs/core-beliefs.md)
 - [Adapter loading and deployment](design-docs/adapter-loading.md)
 - [Remote-signer metering](design-docs/remote-signer-metering.md)
@@ -25,24 +26,23 @@ knowledge. `AGENTS.md` is its map; Beads is the only source of work status.
 - [Changelog](../CHANGELOG.md)
 - [Security](SECURITY.md)
 - [Threat model](security/threat-model.md)
-- [Data classification and lifecycle](security/data-lifecycle.md)
 - [Reliability](RELIABILITY.md)
 - [Work tracking](WORK_TRACKING.md)
+
+## Public compatibility contracts
+
+- [HTTP API](../contracts/openapi.yaml)
+- [Signer-event input](../contracts/asyncapi.yaml)
+- [go-livepeer authorization callback](../contracts/http/v1/go-livepeer-authorize.md)
+- [Python gateway SDK token](../contracts/sdk/livepeer-python-gateway-v1.md)
+- [SQLite and storage-adapter invariants](../contracts/domain/v1/database.md)
+- [Build-time extension ports](../contracts/ports/v2/protocols.py)
+- [Core event envelope](../contracts/events/v2/core-event.schema.json)
 
 ## Operations
 
 - [Operations handbook and runbook index](operations/index.md)
 - [Deployment and Compose runtime](operations/deployment.md)
-- [Observability and service levels](operations/observability.md)
-- [Database backup and recovery](operations/database-recovery.md)
-- [Broker and consumer recovery](operations/broker-recovery.md)
-- [Metering integrity](operations/metering-integrity.md)
-- [Secret and key rotation](operations/secret-rotation.md)
-- [Migration and release rollback](operations/migration-rollback.md)
-- [Incident response](operations/incident-response.md)
-- [Retention and legal holds](operations/retention.md)
-- [Kill-switch reopening](operations/kill-switch.md)
-- [Capacity qualification](operations/capacity.md)
 - [Remote-signer operations](operations/signer.md)
 
 ## References

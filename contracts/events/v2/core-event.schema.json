@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://livepeer.org/clearinghouse/contracts/events/v2/core-event.schema.json",
+  "title": "Clearinghouse core event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "occurred_at", "subject_id", "payload"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^event_[A-Za-z0-9_-]{16,128}$" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "account.created",
+        "workload.started",
+        "price.observed",
+        "payment.authorized",
+        "usage.observed",
+        "workload.cost.updated",
+        "workload.ended"
+      ]
+    },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "subject_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "payload": { "type": "object", "maxProperties": 32 }
+  }
+}

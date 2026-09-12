@@ -21,17 +21,20 @@ class DocumentationTruthTests(unittest.TestCase):
     def test_checked_in_documentation_is_truthful(self) -> None:
         self.assertEqual(validate(ROOT), [])
 
-    def test_reports_broken_links_across_root_docs_and_github_docs(self) -> None:
+    def test_reports_broken_links_across_public_documentation(self) -> None:
         root = self.fixture()
         with (root / "SUPPORT.md").open("a", encoding="utf-8") as stream:
             stream.write("\n[missing](docs/missing.md)\n")
         with (root / ".github" / "PULL_REQUEST_TEMPLATE.md").open("a", encoding="utf-8") as stream:
             stream.write("\n[also missing](../missing.md)\n")
+        with (root / "backend" / "README.md").open("a", encoding="utf-8") as stream:
+            stream.write("\n[component missing](missing.md)\n")
         errors = validate(root)
         self.assertIn("broken local link in SUPPORT.md: docs/missing.md", errors)
         self.assertIn(
             "broken local link in .github/PULL_REQUEST_TEMPLATE.md: ../missing.md", errors
         )
+        self.assertIn("broken local link in backend/README.md: missing.md", errors)
 
     def test_reports_badge_without_exact_backing_workflow(self) -> None:
         root = self.fixture()
@@ -81,15 +84,15 @@ class DocumentationTruthTests(unittest.TestCase):
         compose = root / "compose.yaml"
         compose.write_text(
             compose.read_text(encoding="utf-8").replace(
-                "  CLEARINGHOUSE_AUTH_OTP_TTL_SECONDS: "
-                "${CLEARINGHOUSE_AUTH_OTP_TTL_SECONDS:-600}\n",
+                "      CLEARINGHOUSE_AUTH_RESEND_API_URL: "
+                "${CLEARINGHOUSE_AUTH_RESEND_API_URL:-https://api.resend.com}\n",
                 "",
             ),
             encoding="utf-8",
         )
         self.assertIn(
             "documented runtime configuration is not wired through Compose: "
-            "CLEARINGHOUSE_AUTH_OTP_TTL_SECONDS",
+            "CLEARINGHOUSE_AUTH_RESEND_API_URL",
             validate(root),
         )
 

@@ -1,76 +1,95 @@
 import type { Page, Request, Route } from "@playwright/test"
 
 export const appUrl = { admin: "http://127.0.0.1:4173", user: "http://127.0.0.1:4174" } as const
-const at = "2026-09-09T12:00:00Z"
-const ids = {
-  tenant: "tenant_abcdefgh", account: "account_abcdefgh", principal: "principal_abcdefgh",
-  grant: "grant_abcdefgh", lease: "lease_abcdefgh", usage: "usage_abcdefgh",
-  reservation: "receipt_abcdefgh", charge: "charge_abcdefgh", rate: "rate_abcdefgh",
-  producer: "signer_abcdefgh", credential: "credential_abcdefgh", session: "session_abcdefgh"
+const at = "2026-09-11T12:00:00Z"
+export const ids = {
+  user: "usr_abcdefgh", account: "acct_abcdefgh", credential: "cred_abcdefgh",
+  offer: "price_abcdefgh", workload: "work_abcdefgh", usage: "usage_abcdefgh"
 } as const
-const session = { principal_id: ids.principal, tenant_id: ids.tenant, account_id: ids.account, roles: ["operator"], expires_at: at }
-const tenant = { id: ids.tenant, display_name: "Video team", status: "active", created_at: at }
-const account = { id: ids.account, tenant_id: ids.tenant, display_name: "Production studio", unit: "wei", exposure_cap: "1000", status: "active", created_at: at }
-const balance = { account_id: ids.account, posted: { amount: "900", unit: "wei" }, open_lease_exposure: { amount: "100", unit: "wei" }, available: { amount: "800", unit: "wei" } }
-const grant = { id: ids.grant, account_id: ids.account, kind: "credit", amount: { amount: "900", unit: "wei" }, reason: "Initial allocation", external_reference: null, actor_id: ids.principal, created_at: at }
-const usage = {
-  schema_version: "1.0", event_id: ids.usage, reservation_id: ids.reservation, lease_id: ids.lease,
-  tenant_id: ids.tenant, account_id: ids.account, principal_id: ids.principal, capability: "video.generate",
-  quantity: { value: "1", unit: "fixed" },
-  price_snapshot: { rate_numerator: "2", rate_denominator: "1", charge_unit: "wei", quantity_unit: "fixed", source: "signer", source_version: "1" },
-  producer: { id: ids.producer, kind: "signer", software: "go-livepeer", software_version: "1" }, occurred_at: at,
-  source: { kind: "go_livepeer_create_signed_ticket", event_id: "wire-event", confirmation: "kafka", signed_current_time: at, signed_current_time_unix_ns: "1788955200000000000" }
+const session = { user_id: ids.user, account_id: ids.account, email: "member@example.test", is_admin: false, expires_at: at }
+const adminSession = { ...session, user_id: "usr_admin", account_id: "acct_admin", email: "admin@example.test", is_admin: true }
+const price = { numerator: "2", denominator: "1", currency: "wei", quantity_unit: "pixel" }
+const offer = {
+  id: ids.offer, runner_url: "https://runner.example.test/live",
+  orchestrator_address: "0x0000000000000000000000000000000000000001",
+  capability: "live-video-to-video", model: "noop", constraints: { gpu: "L40S" },
+  price, observed_at: at, expires_at: at
 }
-const charge = { id: ids.charge, usage_event_id: ids.usage, reservation_id: ids.reservation, lease_id: ids.lease, tenant_id: ids.tenant, account_id: ids.account, amount: { value: "2", unit: "wei" }, price_snapshot: { rate_card_id: ids.rate, rate_numerator: "2", rate_denominator: "1", quantity_unit: "fixed" }, created_at: at }
+const workload = {
+  id: ids.workload, account_id: ids.account, capability: offer.capability, model: offer.model,
+  offer_id: ids.offer, quoted_price: price, status: "active", client_reference: "sdk-job-1",
+  runner_session_id: null, manifest_id: "manifest-1", payment_session_id: "pm-1",
+  created_at: at, expires_at: at
+}
+const usage = {
+  id: ids.usage, workload_id: ids.workload, manifest_id: "manifest-1", payment_session_id: "pm-1",
+  capability: offer.capability, quantity: "10", quantity_unit: "pixel", computed_fee: "20",
+  currency: "wei", ticket_count: 1, sequence_number: 0, occurred_at: at, status: "matched"
+}
+const cost = {
+  workload, measured_quantity: "10", measured_unit: "pixel", quoted_fee: "20",
+  computed_fee: "20", currency: "wei", event_count: 1
+}
 
-const page = (items: readonly unknown[]) => ({ items, page: { next_cursor: null } })
 const reply = (route: Route, body: unknown, status = 200) => route.fulfill({
   status,
   headers: { "Cache-Control": "no-store", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
   body: body === undefined ? "" : JSON.stringify(body)
 })
 
-export interface MockApi {
-  readonly requests: Request[]
-}
+export interface MockApi { readonly requests: Request[] }
 
-export const installMockApi = (browserPage: Page, application: "admin" | "user", initiallySignedIn = true): Promise<MockApi> => {
+export const installMockApi = async (
+  browserPage: Page, application: "admin" | "user", initiallySignedIn = true
+): Promise<MockApi> => {
   let signedIn = initiallySignedIn
+  let stopped = false
   const requests: Request[] = []
-  return browserPage.route("**/v1/**", (route) => {
+  await browserPage.route("**/v1/**", (route) => {
     const request = route.request()
     requests.push(request)
     const { pathname } = new URL(request.url())
     if (pathname === "/v1/auth/providers") return reply(route, { providers: ["email", "google", "github"] })
-    if (pathname === "/v1/auth/session" && request.method() === "GET") return signedIn ? reply(route, session) : reply(route, {}, 401)
+    if (pathname === "/v1/auth/session" && request.method() === "GET") {
+      return signedIn ? reply(route, application === "admin" ? adminSession : session) : reply(route, {}, 401)
+    }
     if (pathname === "/v1/auth/email/code") return reply(route, undefined, 202)
-    if (pathname === "/v1/auth/email/verify") { signedIn = true; return reply(route, session) }
-    if (pathname === "/v1/auth/session/refresh") return reply(route, session)
-    if (pathname === "/v1/auth/session" && request.method() === "DELETE") { signedIn = false; return reply(route, undefined, 204) }
-    if (request.method() !== "GET") return reply(route, undefined, 204)
-
-    if (application === "user") {
-      if (pathname === `/v1/accounts/${ids.account}`) return reply(route, account)
-      if (pathname === `/v1/balances/${ids.account}`) return reply(route, balance)
-      if (pathname === "/v1/usage") return reply(route, page([usage]))
-      if (pathname === "/v1/charges") return reply(route, page([charge]))
-      if (pathname === "/v1/catalog") return reply(route, [])
-      if (pathname === "/v1/credentials") return reply(route, [])
-      if (pathname === "/v1/sessions") return reply(route, { items: [] })
+    if (pathname === "/v1/auth/email/verify") {
+      signedIn = true
+      return reply(route, application === "admin" ? adminSession : session)
     }
-
-    const adminResponses: Readonly<Record<string, unknown>> = {
-      "/v1/tenants": page([tenant]), "/v1/accounts": page([account]), "/v1/principals": [],
-      "/v1/grants": page([grant]), "/v1/leases": { items: [] }, "/v1/usage": page([usage]),
-      "/v1/charges": page([charge]), "/v1/open-reservations": page([]), "/v1/rate-cards": [],
-      "/v1/operations/reconciliation": page([]), "/v1/operations/audit-events": page([]),
-      "/v1/operations/metering-health": { status: "ready", open_cases: 0, quarantined: 0, unresolved: 0, global_exposure_cap: "1000", global_open_exposure: "100", last_checkpoint_at: at, last_heartbeat_at: at },
-      "/v1/operations/adapters": [],
-      "/v1/operations/kill-switch": { enabled: false, reason: "Normal operation", changed_at: at, actor_id: null },
-      [`/v1/balances/${ids.account}`]: balance
+    if (pathname === "/v1/auth/session" && request.method() === "DELETE") {
+      signedIn = false
+      return reply(route, undefined, 204)
     }
-    return pathname in adminResponses ? reply(route, adminResponses[pathname]) : reply(route, {}, 404)
-  }).then(() => ({ requests }))
+    if (pathname === "/v1/offers") return reply(route, { items: [offer], next_cursor: null })
+    if (pathname === "/v1/workloads" && request.method() === "GET") return reply(route, { items: [workload], next_cursor: null })
+    if (pathname === "/v1/workloads" && request.method() === "POST") {
+      return reply(route, { ...workload, token: "och_work_secret", sdk_token: "sdk-token", signer_url: appUrl.user, discovery_url: `${appUrl.user}/v1/discovery` }, 201)
+    }
+    if (pathname.startsWith("/v1/workloads/") && request.method() === "DELETE") return reply(route, undefined, 204)
+    if (pathname === "/v1/credentials" && request.method() === "GET") {
+      return reply(route, { items: [{ id: ids.credential, name: "Python SDK", created_at: at, revoked_at: null }], next_cursor: null })
+    }
+    if (pathname === "/v1/credentials" && request.method() === "POST") {
+      return reply(route, { id: ids.credential, name: "Python SDK", token: "och_live_secret", created_at: at }, 201)
+    }
+    if (pathname.startsWith("/v1/credentials/") && request.method() === "DELETE") return reply(route, undefined, 204)
+    if (pathname === "/v1/usage") return reply(route, { items: [usage], next_cursor: null })
+    if (pathname === "/v1/costs") return reply(route, { items: [cost], next_cursor: null })
+    if (pathname === "/v1/summary") return reply(route, { offers: 1, credentials: 1, workloads: 1, active_workloads: 1, usage_events: 1, computed_fee: "20", currency: "wei" })
+    if (pathname === "/v1/admin/global-stop" && request.method() === "PUT") {
+      stopped = true
+      return reply(route, { enabled: true, reason: "maintenance", changed_at: at })
+    }
+    if (pathname === "/v1/admin/overview") return reply(route, {
+      users: 2, workloads: 1, active_workloads: 1, usage: 1, unmatched_usage: 0,
+      computed_fee: "20", currency: "wei",
+      global_stop: { enabled: stopped, reason: stopped ? "maintenance" : "Normal operation", changed_at: at }
+    })
+    if (pathname === "/v1/admin/users") return reply(route, { items: [adminSession, session], next_cursor: null })
+    if (pathname === "/v1/admin/workloads") return reply(route, { items: [workload], next_cursor: null })
+    return reply(route, {}, 404)
+  })
+  return { requests }
 }
-
-export { ids }

@@ -10,11 +10,8 @@ import sys
 from pathlib import Path
 
 EXPECTED = {
-    "backend": "ghcr.io/livepeer/clearinghouse-backend",
-    "admin-web": "ghcr.io/livepeer/clearinghouse-admin-web",
-    "user-web": "ghcr.io/livepeer/clearinghouse-user-web",
+    "core": "ghcr.io/livepeer/clearinghouse-core",
     "edge": "ghcr.io/livepeer/clearinghouse-edge",
-    "ops": "ghcr.io/livepeer/clearinghouse-ops",
     "remote-signer": "ghcr.io/livepeer/clearinghouse-remote-signer",
 }
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")

@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 import re
+import stat
 import sys
 from collections.abc import Mapping
 from datetime import UTC, datetime
@@ -23,7 +24,7 @@ from aiokafka.admin.config_resource import (  # type: ignore[import-untyped]
 CONTROLLER = "0xD8E8328501E9645d16Cf49539efC04f734606ee4"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}\Z")
 IMAGE = (
-    "livepeer/go-livepeer@sha256:ea7a9434e66ae328711c3324ca58536dc7e85da0ab43c02a6550d58ac7f9d8b6"
+    "livepeer/go-livepeer@sha256:972870bed3f302ee69ada1e719d7767274a77d2e752be1ab82581ddf2365dfe7"
 )
 REPOSITORY = Path(__file__).resolve().parents[2]
 MINIMUM_RETENTION_MS = 604_800_000
@@ -87,17 +88,18 @@ def compose_environment(env: Mapping[str, str]) -> dict[str, str]:
     aliases = {
         "WEBHOOK_SECRET": "CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET",
         "KAFKA_GATEWAY_TOPIC": "CLEARINGHOUSE_KAFKA_METERING_TOPIC",
-        "KAFKA_BROKERS": "CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS_INTERNAL",
-        "REMOTE_SIGNER_WEBHOOK_URL": "CLEARINGHOUSE_REMOTE_SIGNER_WEBHOOK_URL_INTERNAL",
         "KAFKA_RETENTION_MS": "CLEARINGHOUSE_KAFKA_RETENTION_MS",
     }
     defaults = {
         "KAFKA_BROKERS": "redpanda:9092",
-        "REMOTE_SIGNER_WEBHOOK_URL": "http://api:8000/v1/compat/go-livepeer/authorize",
+        "REMOTE_SIGNER_WEBHOOK_URL": "http://core:8000/v1/compat/go-livepeer/authorize",
     }
     for target, source in aliases.items():
         if not resolved.get(target):
-            resolved[target] = resolved.get(source, defaults.get(target, ""))
+            resolved[target] = resolved.get(source, "")
+    for target, default in defaults.items():
+        if not resolved.get(target):
+            resolved[target] = default
     secret_path = resolved.get("WEBHOOK_SECRET_FILE") or resolved.get(
         "CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET_HOST_FILE", ""
     )
@@ -212,9 +214,11 @@ def validate(env: Mapping[str, str]) -> None:
         bool(re.fullmatch(r"[A-Za-z0-9_-]{32,}", env.get("WEBHOOK_SECRET", ""))),
         "WEBHOOK_SECRET requires at least 32 URL-safe characters",
     )
-    for name in ("SIGNER_PORT", "SIGNER_HOST_PORT"):
-        port = positive({name: env.get(name, "8935" if name == "SIGNER_PORT" else "18935")}, name)
-        require(1024 <= port <= 65535 and port != 4935, f"{name} must be 1024..65535, except 4935")
+    signer_port = positive({"SIGNER_PORT": env.get("SIGNER_PORT", "8935")}, "SIGNER_PORT")
+    require(
+        1024 <= signer_port <= 65535 and signer_port != 4935,
+        "SIGNER_PORT must be 1024..65535, except 4935",
+    )
     require(
         bool(re.fullmatch(r"[A-Za-z0-9.-]+:[0-9]{1,5}", env.get("KAFKA_BROKERS", ""))),
         "KAFKA_BROKERS requires one DNS hostname:port",
@@ -253,10 +257,11 @@ def validate(env: Mapping[str, str]) -> None:
             f"{label} path must be outside the repository build context",
         )
     require(bool(password.read_bytes().strip()), "keystore password must not be empty")
-    require(
-        password.stat().st_mode & 0o007 == 0,
-        "password file must not be accessible to other users; use mode 0400/0440/0600/0640",
-    )
+    for path, label in ((keyfile, "keystore"), (password, "password")):
+        require(
+            stat.S_IMODE(path.stat().st_mode) in {0o400, 0o440, 0o600, 0o640},
+            f"{label} file mode must be 0400, 0440, 0600, or 0640",
+        )
     try:
         key = json.loads(keyfile.read_text())
     except (ValueError, UnicodeError) as error:

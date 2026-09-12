@@ -8,6 +8,9 @@ const mount = (): OchAppShell => {
   return element
 }
 
+const nextFrame = (): Promise<void> =>
+  new Promise((resolve) => requestAnimationFrame(() => resolve()))
+
 describe("och-app-shell", () => {
   it("renders a complete semantic document region", async () => {
     const element = mount()
@@ -64,6 +67,7 @@ describe("och-app-shell", () => {
 
     button?.click()
     await element.updateComplete
+    await nextFrame()
     expect(element.hasAttribute("navigation-open")).toBe(true)
     expect(element.shadowRoot?.querySelector("[part~='workspace']")?.hasAttribute("inert")).toBe(true)
     expect(button?.getAttribute("aria-expanded")).toBe("true")
@@ -73,8 +77,10 @@ describe("och-app-shell", () => {
 
     button?.click()
     await element.updateComplete
+    await nextFrame()
     expect(element.hasAttribute("navigation-open")).toBe(false)
     expect(element.shadowRoot?.querySelector("[part~='workspace']")?.hasAttribute("inert")).toBe(false)
+    expect(element.shadowRoot?.activeElement).toBe(button)
   })
 
   it("closes mobile navigation with Escape and restores control focus", async () => {
@@ -90,6 +96,7 @@ describe("och-app-shell", () => {
     expect(element.hasAttribute("navigation-open")).toBe(true)
     shell?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
     await element.updateComplete
+    await nextFrame()
     expect(element.hasAttribute("navigation-open")).toBe(false)
     expect(element.shadowRoot?.activeElement).toBe(button)
   })
@@ -108,7 +115,9 @@ describe("och-app-shell", () => {
 
     link.click()
     await element.updateComplete
+    await nextFrame()
     expect(element.hasAttribute("navigation-open")).toBe(false)
+    expect(element.shadowRoot?.activeElement?.getAttribute("part")).toContain("menu-button")
   })
 
   it("closes mobile navigation from the labelled backdrop", async () => {
@@ -120,7 +129,9 @@ describe("och-app-shell", () => {
     expect(backdrop?.getAttribute("aria-label")).toBe("Close navigation")
     backdrop?.click()
     await element.updateComplete
+    await nextFrame()
     expect(element.hasAttribute("navigation-open")).toBe(false)
+    expect(element.shadowRoot?.activeElement?.getAttribute("part")).toContain("menu-button")
   })
 
   it("closes modal mobile navigation from the sidebar control", async () => {
@@ -132,7 +143,27 @@ describe("och-app-shell", () => {
     expect(close?.getAttribute("aria-label")).toBe("Close navigation")
     close?.click()
     await element.updateComplete
+    await nextFrame()
     expect(element.hasAttribute("navigation-open")).toBe(false)
     expect(element.shadowRoot?.querySelector("[part~='workspace']")?.hasAttribute("inert")).toBe(false)
+    expect(element.shadowRoot?.activeElement?.getAttribute("part")).toContain("menu-button")
+  })
+
+  it("ignores non-link navigation activation and redundant close requests", async () => {
+    const element = mount()
+    await element.updateComplete
+    const navigation = element.shadowRoot?.querySelector<HTMLElement>("[part~='navigation']")
+    const backdrop = element.shadowRoot?.querySelector<HTMLButtonElement>(
+      "[part~='navigation-backdrop']"
+    )
+
+    backdrop?.click()
+    navigation?.click()
+    expect(element.hasAttribute("navigation-open")).toBe(false)
+
+    element.shadowRoot?.querySelector<HTMLButtonElement>("[part~='menu-button']")?.click()
+    await element.updateComplete
+    navigation?.click()
+    expect(element.hasAttribute("navigation-open")).toBe(true)
   })
 })

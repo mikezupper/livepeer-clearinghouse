@@ -1,117 +1,6 @@
 name: ${COMPOSE_PROJECT_NAME:-livepeer-clearinghouse}
 
-x-backend-environment: &backend-environment
-  CLEARINGHOUSE_SECRET_OWNER_UID: ${CLEARINGHOUSE_SECRET_OWNER_UID:-1000}
-  CLEARINGHOUSE_ENVIRONMENT: ${CLEARINGHOUSE_ENVIRONMENT:?set CLEARINGHOUSE_ENVIRONMENT}
-  CLEARINGHOUSE_LOG_LEVEL: ${CLEARINGHOUSE_LOG_LEVEL:-INFO}
-  CLEARINGHOUSE_OTEL_EXPORTER_OTLP_ENDPOINT: ${CLEARINGHOUSE_OTEL_EXPORTER_OTLP_ENDPOINT:-}
-  CLEARINGHOUSE_OTEL_METRIC_EXPORT_INTERVAL_MILLIS: ${CLEARINGHOUSE_OTEL_METRIC_EXPORT_INTERVAL_MILLIS:-60000}
-  CLEARINGHOUSE_DATABASE_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-  CLEARINGHOUSE_DATABASE_PASSWORD_FILE: /run/secrets/postgres-password
-  CLEARINGHOUSE_DATABASE_HOST: postgres
-  CLEARINGHOUSE_DATABASE_PORT: 5432
-  CLEARINGHOUSE_DATABASE_NAME: ${POSTGRES_DB:?set POSTGRES_DB}
-  CLEARINGHOUSE_DATABASE_POOL_SIZE: ${CLEARINGHOUSE_DATABASE_POOL_SIZE:-10}
-  CLEARINGHOUSE_DATABASE_POOL_TIMEOUT_SECONDS: ${CLEARINGHOUSE_DATABASE_POOL_TIMEOUT_SECONDS:-5}
-  CLEARINGHOUSE_AUTH_RESEND_API_URL: ${CLEARINGHOUSE_AUTH_RESEND_API_URL:-https://api.resend.com}
-  CLEARINGHOUSE_AUTH_RESEND_FROM: ${CLEARINGHOUSE_AUTH_RESEND_FROM:-Livepeer Clearinghouse <auth@example.invalid>}
-  CLEARINGHOUSE_AUTH_OTP_TTL_SECONDS: ${CLEARINGHOUSE_AUTH_OTP_TTL_SECONDS:-600}
-  CLEARINGHOUSE_AUTH_OTP_MAX_ATTEMPTS: ${CLEARINGHOUSE_AUTH_OTP_MAX_ATTEMPTS:-5}
-  CLEARINGHOUSE_AUTH_OTP_SEND_LIMIT: ${CLEARINGHOUSE_AUTH_OTP_SEND_LIMIT:-5}
-  CLEARINGHOUSE_AUTH_OTP_SEND_WINDOW_SECONDS: ${CLEARINGHOUSE_AUTH_OTP_SEND_WINDOW_SECONDS:-3600}
-  CLEARINGHOUSE_AUTH_OTP_VERIFY_LIMIT: ${CLEARINGHOUSE_AUTH_OTP_VERIFY_LIMIT:-10}
-  CLEARINGHOUSE_AUTH_OTP_VERIFY_WINDOW_SECONDS: ${CLEARINGHOUSE_AUTH_OTP_VERIFY_WINDOW_SECONDS:-900}
-  CLEARINGHOUSE_AUTH_COOKIE_SECURE: ${CLEARINGHOUSE_AUTH_COOKIE_SECURE:?set CLEARINGHOUSE_AUTH_COOKIE_SECURE}
-  CLEARINGHOUSE_AUTH_ALLOWED_ORIGINS: ${CLEARINGHOUSE_AUTH_ALLOWED_ORIGINS:?set CLEARINGHOUSE_AUTH_ALLOWED_ORIGINS}
-  CLEARINGHOUSE_AUTH_SUCCESS_REDIRECT_URL: ${CLEARINGHOUSE_AUTH_SUCCESS_REDIRECT_URL:?set CLEARINGHOUSE_AUTH_SUCCESS_REDIRECT_URL}
-  CLEARINGHOUSE_AUTH_OAUTH_ATTEMPT_LIMIT: ${CLEARINGHOUSE_AUTH_OAUTH_ATTEMPT_LIMIT:-20}
-  CLEARINGHOUSE_AUTH_OAUTH_ATTEMPT_WINDOW_SECONDS: ${CLEARINGHOUSE_AUTH_OAUTH_ATTEMPT_WINDOW_SECONDS:-900}
-  CLEARINGHOUSE_AUTH_SESSION_TTL_SECONDS: ${CLEARINGHOUSE_AUTH_SESSION_TTL_SECONDS:-86400}
-  CLEARINGHOUSE_AUTH_SESSION_ABSOLUTE_TTL_SECONDS: ${CLEARINGHOUSE_AUTH_SESSION_ABSOLUTE_TTL_SECONDS:-604800}
-  CLEARINGHOUSE_AUTH_SESSION_INACTIVITY_SECONDS: ${CLEARINGHOUSE_AUTH_SESSION_INACTIVITY_SECONDS:-3600}
-  CLEARINGHOUSE_IDENTITY_INVITATION_TTL_SECONDS: ${CLEARINGHOUSE_IDENTITY_INVITATION_TTL_SECONDS:-86400}
-  CLEARINGHOUSE_AUTH_GOOGLE_ENABLED: ${CLEARINGHOUSE_AUTH_GOOGLE_ENABLED:-false}
-  CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_ID: ${CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_ID:-}
-  CLEARINGHOUSE_AUTH_GOOGLE_REDIRECT_URI: ${CLEARINGHOUSE_AUTH_GOOGLE_REDIRECT_URI:-}
-  CLEARINGHOUSE_AUTH_GITHUB_ENABLED: ${CLEARINGHOUSE_AUTH_GITHUB_ENABLED:-false}
-  CLEARINGHOUSE_AUTH_GITHUB_CLIENT_ID: ${CLEARINGHOUSE_AUTH_GITHUB_CLIENT_ID:-}
-  CLEARINGHOUSE_AUTH_GITHUB_REDIRECT_URI: ${CLEARINGHOUSE_AUTH_GITHUB_REDIRECT_URI:-}
-  CLEARINGHOUSE_SIGNER_GLOBAL_EXPOSURE_CAP: ${CLEARINGHOUSE_SIGNER_GLOBAL_EXPOSURE_CAP:-0}
-  CLEARINGHOUSE_SIGNER_ID: ${CLEARINGHOUSE_SIGNER_ID:-signer_default0000}
-  CLEARINGHOUSE_SIGNER_URL: ${CLEARINGHOUSE_SIGNER_URL:?set CLEARINGHOUSE_SIGNER_URL}
-  CLEARINGHOUSE_SIGNER_DISCOVERY_URL: ${CLEARINGHOUSE_SIGNER_DISCOVERY_URL:?set CLEARINGHOUSE_SIGNER_DISCOVERY_URL}
-  CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS: ${CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS_INTERNAL:-redpanda:9092}
-  CLEARINGHOUSE_KAFKA_METERING_TOPIC: ${CLEARINGHOUSE_KAFKA_METERING_TOPIC:-livepeer-gateway-events}
-  CLEARINGHOUSE_KAFKA_METERING_GROUP_ID: ${CLEARINGHOUSE_KAFKA_METERING_GROUP_ID:-clearinghouse-metering-v1}
-  CLEARINGHOUSE_KAFKA_METERING_CLIENT_ID: ${CLEARINGHOUSE_KAFKA_METERING_CLIENT_ID:-clearinghouse-metering}
-  CLEARINGHOUSE_METERING_MAX_PAYLOAD_BYTES: ${CLEARINGHOUSE_METERING_MAX_PAYLOAD_BYTES:-1048576}
-  CLEARINGHOUSE_METERING_RECONCILIATION_BATCH_SIZE: ${CLEARINGHOUSE_METERING_RECONCILIATION_BATCH_SIZE:-100}
-  CLEARINGHOUSE_METERING_RECONCILIATION_INTERVAL_SECONDS: ${CLEARINGHOUSE_METERING_RECONCILIATION_INTERVAL_SECONDS:-30}
-  CLEARINGHOUSE_METERING_CONFIRMATION_GRACE_SECONDS: ${CLEARINGHOUSE_METERING_CONFIRMATION_GRACE_SECONDS:-30}
-  CLEARINGHOUSE_METERING_HEARTBEAT_INTERVAL_SECONDS: ${CLEARINGHOUSE_METERING_HEARTBEAT_INTERVAL_SECONDS:-10}
-  CLEARINGHOUSE_METERING_HEARTBEAT_STALE_SECONDS: ${CLEARINGHOUSE_METERING_HEARTBEAT_STALE_SECONDS:-60}
-
-x-backend-secret-environment: &backend-secret-environment
-  CLEARINGHOUSE_AUTH_PEPPER_FILE: /run/secrets/auth-pepper
-  CLEARINGHOUSE_CREDENTIAL_PEPPER_FILE: /run/secrets/credential-pepper
-  CLEARINGHOUSE_AUTH_RESEND_API_KEY_FILE: /run/secrets/resend-api-key
-  CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET_FILE: /run/secrets/signer-webhook-secret
-  CLEARINGHOUSE_SIGNER_SESSION_PEPPER_FILE: /run/secrets/signer-session-pepper
-
-x-oauth-secret-environment: &oauth-secret-environment
-  CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_SECRET_FILE: /run/secrets/google-client-secret
-  CLEARINGHOUSE_AUTH_GITHUB_CLIENT_SECRET_FILE: /run/secrets/github-client-secret
-
-x-backend-service: &backend-service
-  image: ${CLEARINGHOUSE_BACKEND_IMAGE:-livepeer/clearinghouse-backend:local}
-  build:
-    context: .
-    dockerfile: deploy/backend.Dockerfile
-  read_only: true
-  tmpfs:
-    - /tmp:mode=1777
-  security_opt:
-    - no-new-privileges:true
-  cap_drop:
-    - ALL
-  cap_add:
-    - DAC_OVERRIDE
-    - SETPCAP
-    - SETGID
-    - SETUID
-  restart: "no"
-
 services:
-  postgres:
-    image: postgres:18.6-bookworm@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
-      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
-    volumes:
-      - postgres-data:/var/lib/postgresql
-    secrets:
-      - postgres-password
-    networks:
-      - database
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 3s
-      timeout: 3s
-      retries: 30
-      start_period: 5s
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
-    restart: unless-stopped
-
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v26.2.2@sha256:468bd13a9f2bd24794cb7fddc867c767fb1008b9a07b297b89fde48c564d7d96
     command:
@@ -127,226 +16,70 @@ services:
       - --advertise-kafka-addr=redpanda:9092
     volumes:
       - redpanda-data:/var/lib/redpanda/data
-    networks:
-      - broker
+    networks: [core]
     healthcheck:
       test: ["CMD", "rpk", "cluster", "info", "-X", "brokers=127.0.0.1:9092"]
       interval: 3s
       timeout: 5s
       retries: 30
       start_period: 5s
-    security_opt:
-      - no-new-privileges:true
+    security_opt: ["no-new-privileges:true"]
     restart: unless-stopped
 
-  redpanda-init:
-    <<: *backend-service
-    command: ["python", "/app/deploy/topic_policy.py"]
+  core:
+    image: ${CLEARINGHOUSE_CORE_IMAGE:-livepeer/clearinghouse-core:local}
+    build:
+      context: .
+      dockerfile: deploy/backend.Dockerfile
     environment:
-      METERING_TOPIC: ${CLEARINGHOUSE_KAFKA_METERING_TOPIC:-livepeer-gateway-events}
-      RETENTION_MS: ${CLEARINGHOUSE_KAFKA_RETENTION_MS:-604800000}
-      KAFKA_BROKERS: ${CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS_INTERNAL:-redpanda:9092}
+      CLEARINGHOUSE_ENVIRONMENT: ${CLEARINGHOUSE_ENVIRONMENT:-development}
+      CLEARINGHOUSE_LOG_LEVEL: ${CLEARINGHOUSE_LOG_LEVEL:-INFO}
+      CLEARINGHOUSE_DATABASE_PATH: /data/clearinghouse.db
+      CLEARINGHOUSE_DATABASE_BUSY_TIMEOUT_MS: ${CLEARINGHOUSE_DATABASE_BUSY_TIMEOUT_MS:-5000}
+      CLEARINGHOUSE_HTTP_HOST: 0.0.0.0
+      CLEARINGHOUSE_HTTP_PORT: 8000
+      CLEARINGHOUSE_PUBLIC_URL: ${CLEARINGHOUSE_PUBLIC_URL:-http://localhost:8080}
+      CLEARINGHOUSE_ALLOWED_ORIGINS: ${CLEARINGHOUSE_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+      CLEARINGHOUSE_COOKIE_SECURE: ${CLEARINGHOUSE_COOKIE_SECURE:-false}
+      CLEARINGHOUSE_ADMIN_EMAIL: ${CLEARINGHOUSE_ADMIN_EMAIL:-}
+      CLEARINGHOUSE_AUTH_PEPPER: ${CLEARINGHOUSE_AUTH_PEPPER:?set CLEARINGHOUSE_AUTH_PEPPER}
+      CLEARINGHOUSE_WORKLOAD_PEPPER: ${CLEARINGHOUSE_WORKLOAD_PEPPER:?set CLEARINGHOUSE_WORKLOAD_PEPPER}
+      CLEARINGHOUSE_AUTH_RESEND_API_URL: ${CLEARINGHOUSE_AUTH_RESEND_API_URL:-https://api.resend.com}
+      CLEARINGHOUSE_AUTH_RESEND_API_KEY: ${CLEARINGHOUSE_AUTH_RESEND_API_KEY:?set CLEARINGHOUSE_AUTH_RESEND_API_KEY}
+      CLEARINGHOUSE_AUTH_RESEND_FROM: ${CLEARINGHOUSE_AUTH_RESEND_FROM:?set CLEARINGHOUSE_AUTH_RESEND_FROM}
+      CLEARINGHOUSE_AUTH_GOOGLE_ENABLED: ${CLEARINGHOUSE_AUTH_GOOGLE_ENABLED:-false}
+      CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_ID: ${CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_ID:-}
+      CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_SECRET: ${CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_SECRET:-}
+      CLEARINGHOUSE_AUTH_GITHUB_ENABLED: ${CLEARINGHOUSE_AUTH_GITHUB_ENABLED:-false}
+      CLEARINGHOUSE_AUTH_GITHUB_CLIENT_ID: ${CLEARINGHOUSE_AUTH_GITHUB_CLIENT_ID:-}
+      CLEARINGHOUSE_AUTH_GITHUB_CLIENT_SECRET: ${CLEARINGHOUSE_AUTH_GITHUB_CLIENT_SECRET:-}
+      CLEARINGHOUSE_SIGNER_ID: ${CLEARINGHOUSE_SIGNER_ID:-signer_default0000}
+      CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET: ${CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET:?set CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET}
+      CLEARINGHOUSE_DISCOVERY_URLS: ${CLEARINGHOUSE_DISCOVERY_URLS:-http://remote-signer:8935/discover-orchestrators}
+      CLEARINGHOUSE_LV2V_OFFERS_FILE: ${CLEARINGHOUSE_LV2V_OFFERS_FILE:-}
+      CLEARINGHOUSE_DISCOVERY_TTL_SECONDS: ${CLEARINGHOUSE_DISCOVERY_TTL_SECONDS:-3600}
+      CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      CLEARINGHOUSE_KAFKA_METERING_TOPIC: ${CLEARINGHOUSE_KAFKA_METERING_TOPIC:-livepeer-gateway-events}
+      CLEARINGHOUSE_KAFKA_METERING_GROUP_ID: ${CLEARINGHOUSE_KAFKA_METERING_GROUP_ID:-clearinghouse-core-v1}
+      CLEARINGHOUSE_KAFKA_RETENTION_MS: ${CLEARINGHOUSE_KAFKA_RETENTION_MS:-604800000}
+    volumes:
+      - sqlite-data:/data
+      - ./config:/app/config:ro
     depends_on:
       redpanda:
         condition: service_healthy
-    networks:
-      - broker
-
-  migrate:
-    <<: *backend-service
-    command: ["alembic", "-c", "backend/alembic.ini", "upgrade", "head"]
-    environment:
-      CLEARINGHOUSE_ENVIRONMENT: ${CLEARINGHOUSE_ENVIRONMENT:?set CLEARINGHOUSE_ENVIRONMENT}
-      CLEARINGHOUSE_SECRET_OWNER_UID: ${CLEARINGHOUSE_SECRET_OWNER_UID:-1000}
-      CLEARINGHOUSE_DATABASE_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      CLEARINGHOUSE_DATABASE_PASSWORD_FILE: /run/secrets/postgres-password
-      CLEARINGHOUSE_DATABASE_HOST: postgres
-      CLEARINGHOUSE_DATABASE_PORT: 5432
-      CLEARINGHOUSE_DATABASE_NAME: ${POSTGRES_DB:?set POSTGRES_DB}
-    secrets:
-      - postgres-password
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - database
-
-  bootstrap-operator:
-    <<: *backend-service
-    command: ["python", "/app/deploy/bootstrap_operator.py"]
-    environment:
-      CLEARINGHOUSE_ENVIRONMENT: ${CLEARINGHOUSE_ENVIRONMENT:?set CLEARINGHOUSE_ENVIRONMENT}
-      CLEARINGHOUSE_SECRET_OWNER_UID: ${CLEARINGHOUSE_SECRET_OWNER_UID:-1000}
-      CLEARINGHOUSE_DATABASE_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      CLEARINGHOUSE_DATABASE_PASSWORD_FILE: /run/secrets/postgres-password
-      CLEARINGHOUSE_DATABASE_HOST: postgres
-      CLEARINGHOUSE_DATABASE_PORT: 5432
-      CLEARINGHOUSE_DATABASE_NAME: ${POSTGRES_DB:?set POSTGRES_DB}
-      CLEARINGHOUSE_DATABASE_POOL_SIZE: ${CLEARINGHOUSE_DATABASE_POOL_SIZE:-10}
-      CLEARINGHOUSE_DATABASE_POOL_TIMEOUT_SECONDS: ${CLEARINGHOUSE_DATABASE_POOL_TIMEOUT_SECONDS:-5}
-      CLEARINGHOUSE_AUTH_PEPPER_FILE: /run/secrets/auth-pepper
-      CLEARINGHOUSE_IDENTITY_INVITATION_TTL_SECONDS: ${CLEARINGHOUSE_IDENTITY_INVITATION_TTL_SECONDS:-86400}
-      CLEARINGHOUSE_OPERATOR_BOOTSTRAP_EMAIL_FILE: /run/secrets/operator-bootstrap-email
-      CLEARINGHOUSE_OPERATOR_BOOTSTRAP_SECRET_FILE: /run/secrets/operator-bootstrap-secret
-    secrets:
-      - postgres-password
-      - auth-pepper
-      - operator-bootstrap-email
-      - operator-bootstrap-secret
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    networks:
-      - database
-
-  api:
-    <<: *backend-service
-    environment:
-      <<: [*backend-environment, *backend-secret-environment, *oauth-secret-environment]
-      CLEARINGHOUSE_HTTP_HOST: 0.0.0.0
-      CLEARINGHOUSE_HTTP_PORT: 8000
-    secrets:
-      - postgres-password
-      - auth-pepper
-      - credential-pepper
-      - resend-api-key
-      - google-client-secret
-      - github-client-secret
-      - signer-webhook-secret
-      - signer-session-pepper
-    depends_on:
-      bootstrap-operator:
-        condition: service_completed_successfully
-      redpanda-init:
-        condition: service_completed_successfully
-    networks:
-      - database
-      - app
-      - egress
-      - observability
+    networks: [core]
+    read_only: true
+    tmpfs: ["/tmp:mode=1777"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
     healthcheck:
-      test:
-        [
-          "CMD",
-          "/app/deploy/backend-entrypoint.sh",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3).read()",
-        ]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3).read()"]
       interval: 3s
       timeout: 5s
       retries: 30
       start_period: 5s
     restart: unless-stopped
-
-  consumer:
-    <<: *backend-service
-    command: ["clearinghouse-metering"]
-    environment:
-      CLEARINGHOUSE_ENVIRONMENT: ${CLEARINGHOUSE_ENVIRONMENT:?set CLEARINGHOUSE_ENVIRONMENT}
-      CLEARINGHOUSE_SECRET_OWNER_UID: ${CLEARINGHOUSE_SECRET_OWNER_UID:-1000}
-      CLEARINGHOUSE_LOG_LEVEL: ${CLEARINGHOUSE_LOG_LEVEL:-INFO}
-      CLEARINGHOUSE_OTEL_EXPORTER_OTLP_ENDPOINT: ${CLEARINGHOUSE_OTEL_EXPORTER_OTLP_ENDPOINT:-}
-      CLEARINGHOUSE_OTEL_METRIC_EXPORT_INTERVAL_MILLIS: ${CLEARINGHOUSE_OTEL_METRIC_EXPORT_INTERVAL_MILLIS:-60000}
-      CLEARINGHOUSE_DATABASE_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      CLEARINGHOUSE_DATABASE_PASSWORD_FILE: /run/secrets/postgres-password
-      CLEARINGHOUSE_DATABASE_HOST: postgres
-      CLEARINGHOUSE_DATABASE_PORT: 5432
-      CLEARINGHOUSE_DATABASE_NAME: ${POSTGRES_DB:?set POSTGRES_DB}
-      CLEARINGHOUSE_DATABASE_POOL_SIZE: ${CLEARINGHOUSE_DATABASE_POOL_SIZE:-10}
-      CLEARINGHOUSE_DATABASE_POOL_TIMEOUT_SECONDS: ${CLEARINGHOUSE_DATABASE_POOL_TIMEOUT_SECONDS:-5}
-      CLEARINGHOUSE_SIGNER_ID: ${CLEARINGHOUSE_SIGNER_ID:-signer_default0000}
-      CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS: ${CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS_INTERNAL:-redpanda:9092}
-      CLEARINGHOUSE_KAFKA_METERING_TOPIC: ${CLEARINGHOUSE_KAFKA_METERING_TOPIC:-livepeer-gateway-events}
-      CLEARINGHOUSE_KAFKA_METERING_GROUP_ID: ${CLEARINGHOUSE_KAFKA_METERING_GROUP_ID:-clearinghouse-metering-v1}
-      CLEARINGHOUSE_KAFKA_METERING_CLIENT_ID: ${CLEARINGHOUSE_KAFKA_METERING_CLIENT_ID:-clearinghouse-metering}
-      CLEARINGHOUSE_METERING_MAX_PAYLOAD_BYTES: ${CLEARINGHOUSE_METERING_MAX_PAYLOAD_BYTES:-1048576}
-      CLEARINGHOUSE_METERING_RECONCILIATION_BATCH_SIZE: ${CLEARINGHOUSE_METERING_RECONCILIATION_BATCH_SIZE:-100}
-      CLEARINGHOUSE_METERING_RECONCILIATION_INTERVAL_SECONDS: ${CLEARINGHOUSE_METERING_RECONCILIATION_INTERVAL_SECONDS:-30}
-      CLEARINGHOUSE_METERING_CONFIRMATION_GRACE_SECONDS: ${CLEARINGHOUSE_METERING_CONFIRMATION_GRACE_SECONDS:-30}
-      CLEARINGHOUSE_METERING_HEARTBEAT_INTERVAL_SECONDS: ${CLEARINGHOUSE_METERING_HEARTBEAT_INTERVAL_SECONDS:-10}
-      CLEARINGHOUSE_METERING_HEARTBEAT_STALE_SECONDS: ${CLEARINGHOUSE_METERING_HEARTBEAT_STALE_SECONDS:-60}
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-      redpanda-init:
-        condition: service_completed_successfully
-    networks:
-      - database
-      - broker
-      - observability
-    secrets:
-      - postgres-password
-    healthcheck:
-      test: ["CMD", "/app/deploy/backend-entrypoint.sh", "python", "/app/deploy/consumer_health.py"]
-      interval: 3s
-      timeout: 5s
-      retries: 30
-      start_period: 10s
-    restart: unless-stopped
-
-  backend-test:
-    <<: *backend-service
-    image: ${CLEARINGHOUSE_BACKEND_TEST_IMAGE:-livepeer/clearinghouse-backend-test:local}
-    build:
-      context: .
-      dockerfile: deploy/backend.Dockerfile
-      target: test
-    profiles: ["test"]
-    user: "0:0"
-    entrypoint: ["/app/deploy/backend-test-entrypoint.sh", "/bin/sh", "-ec"]
-    command:
-      - >-
-        python -m pytest --cov=clearinghouse --cov-branch
-        --cov-report=json:backend/coverage.json -q -p no:cacheprovider
-        backend/tests/integration/test_onboarding_postgres.py
-        backend/tests/unit
-        backend/tests/integration/test_accounts_postgres.py
-        backend/tests/integration/test_auth_postgres.py
-        backend/tests/integration/test_metering_postgres.py
-        backend/tests/integration/test_metering_redpanda.py
-        backend/tests/integration/test_operations_postgres.py
-        backend/tests/integration/test_signer_postgres.py
-        && python backend/scripts/check_coverage.py
-    environment:
-      CLEARINGHOUSE_TEST_DATABASE_PASSWORD_FILE: /run/secrets/postgres-password
-      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
-      CLEARINGHOUSE_TEST_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
-      COVERAGE_FILE: /tmp/.coverage
-      CLEARINGHOUSE_TEST_UID: ${CLEARINGHOUSE_TEST_UID:-1000}
-      CLEARINGHOUSE_TEST_GID: ${CLEARINGHOUSE_TEST_GID:-1000}
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-      redpanda-init:
-        condition: service_completed_successfully
-    networks:
-      - database
-      - broker
-    secrets:
-      - postgres-password
-    cap_add:
-      - DAC_OVERRIDE
-      - SETPCAP
-      - SETGID
-      - SETUID
-    read_only: false
-    volumes:
-      - ./backend/coverage.json:/app/backend/coverage.json
-
-  signer-volume-init:
-    <<: *backend-service
-    user: "0:0"
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["chown 10001:10001 /data"]
-    cap_add:
-      - CHOWN
-    secrets: []
-    volumes:
-      - signer-data:/data
-    networks:
-      - app
 
   remote-signer:
     image: ${CLEARINGHOUSE_SIGNER_IMAGE:-livepeer/clearinghouse-remote-signer:local}
@@ -361,187 +94,49 @@ services:
       SIGNER_NETWORK: ${SIGNER_NETWORK:-arbitrum-one-mainnet}
       SIGNER_CHAIN_ID: ${SIGNER_CHAIN_ID:-42161}
       SIGNER_CONTROLLER: ${SIGNER_CONTROLLER:-0xD8E8328501E9645d16Cf49539efC04f734606ee4}
-      ETH_RPC_URL: ${ETH_RPC_URL:-}
-      SIGNER_ETH_ADDR: ${SIGNER_ETH_ADDR:-}
+      ETH_RPC_URL: ${ETH_RPC_URL:?set ETH_RPC_URL}
+      SIGNER_ETH_ADDR: ${SIGNER_ETH_ADDR:?set SIGNER_ETH_ADDR}
       SIGNER_ETH_KEYSTORE_PATH: /run/secrets/signer-keystore.json
       SIGNER_PASSWORD_FILE: /run/secrets/signer-password
       SIGNER_DATA_DIR: /data
       SIGNER_PORT: 8935
       SIGNER_REMOTE_DISCOVERY: ${SIGNER_REMOTE_DISCOVERY:-true}
       SIGNER_ORCH_ADDR: ${SIGNER_ORCH_ADDR:-}
-      REMOTE_SIGNER_WEBHOOK_URL: ${CLEARINGHOUSE_REMOTE_SIGNER_WEBHOOK_URL_INTERNAL:-http://api:8000/v1/compat/go-livepeer/authorize}
-      WEBHOOK_SECRET_FILE: /run/secrets/signer-webhook-secret
-      KAFKA_BROKERS: ${CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS_INTERNAL:-redpanda:9092}
+      REMOTE_SIGNER_WEBHOOK_URL: http://core:8000/v1/compat/go-livepeer/authorize
+      WEBHOOK_SECRET: ${CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET:?set CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET}
+      KAFKA_BROKERS: redpanda:9092
       KAFKA_GATEWAY_TOPIC: ${CLEARINGHOUSE_KAFKA_METERING_TOPIC:-livepeer-gateway-events}
-      KAFKA_RETENTION_MS: ${CLEARINGHOUSE_KAFKA_RETENTION_MS:-604800000}
       LP_KAFKAUSER: ${LP_KAFKAUSER:-}
-      LP_KAFKAPASSWORD_FILE: /run/secrets/kafka-password
+      LP_KAFKAPASSWORD: ${LP_KAFKAPASSWORD:-}
     volumes:
       - type: bind
-        source: ${SIGNER_KEYSTORE_HOST_FILE:-/run/livepeer-clearinghouse/secrets/signer-keystore.json}
+        source: ${SIGNER_KEYSTORE_HOST_FILE:?set SIGNER_KEYSTORE_HOST_FILE}
         target: /run/secrets/signer-keystore.json
         read_only: true
       - type: bind
-        source: ${SIGNER_PASSWORD_HOST_FILE:-/run/livepeer-clearinghouse/secrets/signer-password}
+        source: ${SIGNER_PASSWORD_HOST_FILE:?set SIGNER_PASSWORD_HOST_FILE}
         target: /run/secrets/signer-password
         read_only: true
       - signer-data:/data
-    secrets:
-      - signer-webhook-secret
-      - kafka-password
     depends_on:
-      signer-volume-init:
-        condition: service_completed_successfully
-      api:
+      core:
         condition: service_healthy
-      redpanda-init:
-        condition: service_completed_successfully
-    networks:
-      - app
-      - broker
-      - egress
+      redpanda:
+        condition: service_healthy
+    networks: [core]
     read_only: true
     tmpfs:
       - /tmp:mode=1777
       - /runtime-secrets:uid=10001,gid=10001,mode=0700
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETPCAP
-      - SETGID
-      - SETUID
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, SETPCAP, SETGID, SETUID]
     healthcheck:
-      test:
-        [
-          "CMD",
-          "setpriv",
-          "--reuid=10001",
-          "--regid=10001",
-          "--clear-groups",
-          "--inh-caps=-chown,-dac_override,-setpcap,-setgid,-setuid",
-          "--ambient-caps=-chown,-dac_override,-setpcap,-setgid,-setuid",
-          "--bounding-set=-chown,-dac_override,-setpcap,-setgid,-setuid",
-          "--no-new-privs",
-          "/usr/bin/bash",
-          "-ec",
-          "exec 3<>/dev/tcp/127.0.0.1/8935",
-        ]
+      test: ["CMD", "setpriv", "--reuid=10001", "--regid=10001", "--clear-groups", "--inh-caps=-chown,-dac_override,-setpcap,-setgid,-setuid", "--ambient-caps=-chown,-dac_override,-setpcap,-setgid,-setuid", "--bounding-set=-chown,-dac_override,-setpcap,-setgid,-setuid", "--no-new-privs", "/usr/bin/bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8935"]
       interval: 5s
       timeout: 3s
       retries: 30
       start_period: 20s
-    restart: unless-stopped
-
-  signer-diagnostics:
-    <<: *backend-service
-    profiles: ["signer-check"]
-    network_mode: service:remote-signer
-    command:
-      - python
-      - /app/deploy/signer/preflight.py
-      - --rpc
-      - --webhook
-      - --broker
-      - --admin-url
-      - http://127.0.0.1:4935
-    environment:
-      CLEARINGHOUSE_SECRET_OWNER_UID: ${CLEARINGHOUSE_SECRET_OWNER_UID:-1000}
-      SIGNER_MODE: ${SIGNER_MODE:-evaluation}
-      SIGNER_NETWORK: ${SIGNER_NETWORK:-arbitrum-one-mainnet}
-      SIGNER_CHAIN_ID: ${SIGNER_CHAIN_ID:-42161}
-      SIGNER_CONTROLLER: ${SIGNER_CONTROLLER:-0xD8E8328501E9645d16Cf49539efC04f734606ee4}
-      ETH_RPC_URL: ${ETH_RPC_URL:-}
-      SIGNER_ETH_ADDR: ${SIGNER_ETH_ADDR:-}
-      SIGNER_ETH_KEYSTORE_PATH: /run/secrets/signer-keystore.json
-      SIGNER_PASSWORD_FILE: /run/secrets/signer-password
-      SIGNER_MIN_GAS_WEI: ${SIGNER_MIN_GAS_WEI:-}
-      SIGNER_MIN_DEPOSIT_WEI: ${SIGNER_MIN_DEPOSIT_WEI:-}
-      SIGNER_MIN_RESERVE_WEI: ${SIGNER_MIN_RESERVE_WEI:-}
-      SIGNER_REMOTE_DISCOVERY: ${SIGNER_REMOTE_DISCOVERY:-true}
-      SIGNER_ORCH_ADDR: ${SIGNER_ORCH_ADDR:-}
-      REMOTE_SIGNER_WEBHOOK_URL: ${CLEARINGHOUSE_REMOTE_SIGNER_WEBHOOK_URL_INTERNAL:-http://api:8000/v1/compat/go-livepeer/authorize}
-      WEBHOOK_SECRET_FILE: /run/secrets/signer-webhook-secret
-      KAFKA_BROKERS: ${CLEARINGHOUSE_KAFKA_BOOTSTRAP_SERVERS_INTERNAL:-redpanda:9092}
-      KAFKA_GATEWAY_TOPIC: ${CLEARINGHOUSE_KAFKA_METERING_TOPIC:-livepeer-gateway-events}
-      KAFKA_RETENTION_MS: ${CLEARINGHOUSE_KAFKA_RETENTION_MS:-604800000}
-    volumes:
-      - type: bind
-        source: ${SIGNER_KEYSTORE_HOST_FILE:-/run/livepeer-clearinghouse/secrets/signer-keystore.json}
-        target: /run/secrets/signer-keystore.json
-        read_only: true
-      - type: bind
-        source: ${SIGNER_PASSWORD_HOST_FILE:-/run/livepeer-clearinghouse/secrets/signer-password}
-        target: /run/secrets/signer-password
-        read_only: true
-    secrets:
-      - signer-webhook-secret
-      - kafka-password
-    depends_on:
-      remote-signer:
-        condition: service_healthy
-    read_only: true
-    tmpfs:
-      - /tmp:mode=1777
-      - /runtime-secrets:uid=10001,gid=10001,mode=0700
-    user: "0:0"
-    entrypoint: ["/app/deploy/signer/diagnostic-entrypoint.sh"]
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETPCAP
-      - SETGID
-      - SETUID
-
-  admin-web:
-    image: ${CLEARINGHOUSE_ADMIN_IMAGE:-livepeer/clearinghouse-admin-web:local}
-    build:
-      context: .
-      dockerfile: deploy/frontend.Dockerfile
-      args:
-        APP: admin-web
-    networks:
-      - app
-    read_only: true
-    tmpfs:
-      - /config:uid=10001,gid=10001
-      - /data:uid=10001,gid=10001
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
-      interval: 3s
-      timeout: 3s
-      retries: 20
-    restart: unless-stopped
-
-  user-web:
-    image: ${CLEARINGHOUSE_USER_IMAGE:-livepeer/clearinghouse-user-web:local}
-    build:
-      context: .
-      dockerfile: deploy/frontend.Dockerfile
-      args:
-        APP: user-web
-    networks:
-      - app
-    read_only: true
-    tmpfs:
-      - /config:uid=10001,gid=10001
-      - /data:uid=10001,gid=10001
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
-      interval: 3s
-      timeout: 3s
-      retries: 20
     restart: unless-stopped
 
   edge:
@@ -549,191 +144,29 @@ services:
     build:
       context: .
       dockerfile: deploy/edge.Dockerfile
-    user: "10001:10001"
     ports:
       - 127.0.0.1:${CLEARINGHOUSE_EDGE_PORT:-8080}:8080
     depends_on:
-      api:
+      core:
         condition: service_healthy
-      admin-web:
-        condition: service_healthy
-      user-web:
-        condition: service_healthy
-    networks:
-      app: {}
-      ingress:
-        gw_priority: 1
+    networks: [core]
     read_only: true
     tmpfs:
       - /config:uid=10001,gid=10001
       - /data:uid=10001,gid=10001
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health/live"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health/ready"]
       interval: 3s
       timeout: 3s
       retries: 20
     restart: unless-stopped
 
-  smoke:
-    <<: *backend-service
-    profiles: ["smoke"]
-    command: ["python", "/app/deploy/smoke.py"]
-    environment:
-      <<: [*backend-environment, *backend-secret-environment]
-      CLEARINGHOUSE_AUTH_GOOGLE_ENABLED: "false"
-      CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_ID: ""
-      CLEARINGHOUSE_AUTH_GOOGLE_REDIRECT_URI: ""
-      CLEARINGHOUSE_AUTH_GITHUB_ENABLED: "false"
-      CLEARINGHOUSE_AUTH_GITHUB_CLIENT_ID: ""
-      CLEARINGHOUSE_AUTH_GITHUB_REDIRECT_URI: ""
-      SMOKE_EDGE_URL: http://edge:8080
-    secrets:
-      - postgres-password
-      - auth-pepper
-      - credential-pepper
-      - resend-api-key
-      - signer-webhook-secret
-      - signer-session-pepper
-    depends_on:
-      edge:
-        condition: service_healthy
-      consumer:
-        condition: service_healthy
-    networks:
-      - database
-      - broker
-      - app
-
-  ops-control:
-    <<: *backend-service
-    profiles: ["ops"]
-    command: ["/app/deploy/ops/control.sh", "status"]
-    environment:
-      CLEARINGHOUSE_ENVIRONMENT: ${CLEARINGHOUSE_ENVIRONMENT:?set CLEARINGHOUSE_ENVIRONMENT}
-      CLEARINGHOUSE_SECRET_OWNER_UID: ${CLEARINGHOUSE_SECRET_OWNER_UID:-1000}
-      CLEARINGHOUSE_DATABASE_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      CLEARINGHOUSE_DATABASE_PASSWORD_FILE: /run/secrets/postgres-password
-      CLEARINGHOUSE_DATABASE_HOST: postgres
-      CLEARINGHOUSE_DATABASE_PORT: 5432
-      CLEARINGHOUSE_DATABASE_NAME: ${POSTGRES_DB:?set POSTGRES_DB}
-      CLEARINGHOUSE_OPERATIONS_ACTOR_ID: ${CLEARINGHOUSE_OPERATIONS_ACTOR_ID:-}
-    secrets:
-      - postgres-password
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    networks:
-      - database
-
-  ops-database:
-    image: ${CLEARINGHOUSE_OPS_IMAGE:-livepeer/clearinghouse-ops:local}
-    build:
-      context: .
-      dockerfile: deploy/ops/Dockerfile
-    profiles: ["ops"]
-    environment:
-      CLEARINGHOUSE_SECRET_OWNER_UID: ${CLEARINGHOUSE_SECRET_OWNER_UID:-1000}
-      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
-      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      AGE_RECIPIENT: ${CLEARINGHOUSE_BACKUP_AGE_RECIPIENT:-}
-      OPS_BACKUP_KEY_ID: ${OPS_BACKUP_KEY_ID:-}
-      OPS_BACKUP_RETENTION_UNTIL: ${OPS_BACKUP_RETENTION_UNTIL:-}
-    secrets:
-      - postgres-password
-    volumes:
-      - encrypted-backups:/backups
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-    networks:
-      - database
-    read_only: true
-    tmpfs:
-      - /tmp:uid=10001,gid=10001,mode=0700
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETPCAP
-      - SETGID
-      - SETUID
-
-  observability:
-    image: grafana/otel-lgtm:0.32.1@sha256:7fd8eaad6bb64897ad5f644c8e15ee67c3204c97168f4bdba122adbf8f60e3c4
-    profiles: ["observability"]
-    env_file:
-      - deploy/observability/lgtm.env
-    volumes:
-      - observability-data:/data
-      - ./deploy/observability/qualify.sh:/usr/local/bin/clearinghouse-observability-check:ro
-    expose:
-      - "3000"
-      - "4317"
-      - "4318"
-    networks:
-      - observability
-    security_opt:
-      - no-new-privileges:true
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "3", "http://127.0.0.1:3000/api/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-      start_period: 20s
-    restart: unless-stopped
-
 networks:
-  database:
-    internal: true
-  broker:
-    internal: true
-  app:
-    internal: true
-  ingress: {}
-  egress: {}
-  observability:
-    internal: true
+  core: {}
 
 volumes:
-  postgres-data: {}
   redpanda-data: {}
   signer-data: {}
-  encrypted-backups:
-    name: ${CLEARINGHOUSE_BACKUP_VOLUME:-livepeer-clearinghouse-encrypted-backups}
-  observability-data: {}
-
-secrets:
-  postgres-password:
-    file: ${POSTGRES_PASSWORD_HOST_FILE:-./tmp/runtime-secrets/postgres-password}
-  auth-pepper:
-    file: ${CLEARINGHOUSE_AUTH_PEPPER_HOST_FILE:-./tmp/runtime-secrets/auth-pepper}
-  credential-pepper:
-    file: ${CLEARINGHOUSE_CREDENTIAL_PEPPER_HOST_FILE:-./tmp/runtime-secrets/credential-pepper}
-  resend-api-key:
-    file: ${CLEARINGHOUSE_AUTH_RESEND_API_KEY_HOST_FILE:-./tmp/runtime-secrets/resend-api-key}
-  google-client-secret:
-    file: ${CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_SECRET_HOST_FILE:-./tmp/runtime-secrets/google-client-secret}
-  github-client-secret:
-    file: ${CLEARINGHOUSE_AUTH_GITHUB_CLIENT_SECRET_HOST_FILE:-./tmp/runtime-secrets/github-client-secret}
-  signer-webhook-secret:
-    file: ${CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET_HOST_FILE:-./tmp/runtime-secrets/signer-webhook-secret}
-  signer-session-pepper:
-    file: ${CLEARINGHOUSE_SIGNER_SESSION_PEPPER_HOST_FILE:-./tmp/runtime-secrets/signer-session-pepper}
-  operator-bootstrap-email:
-    file: ${CLEARINGHOUSE_OPERATOR_BOOTSTRAP_EMAIL_HOST_FILE:-./tmp/runtime-secrets/operator-bootstrap-email}
-  operator-bootstrap-secret:
-    file: ${CLEARINGHOUSE_OPERATOR_BOOTSTRAP_SECRET_HOST_FILE:-./tmp/runtime-secrets/operator-bootstrap-secret}
-  kafka-password:
-    file: ${LP_KAFKAPASSWORD_HOST_FILE:-./tmp/runtime-secrets/kafka-password}
+  sqlite-data: {}

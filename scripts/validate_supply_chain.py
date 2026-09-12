@@ -12,14 +12,16 @@ FULL_SHA = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_./-]+)?@[
 
 REQUIRED_WORKFLOWS = ("ci.yml", "security.yml", "scorecard.yml", "release.yml")
 STALE_WORKFLOWS = ("bootstrap.yml", "builder-api.yml", "bump-version.yml")
-RELEASE_IMAGES = {
-    "ghcr.io/livepeer/clearinghouse-backend",
-    "ghcr.io/livepeer/clearinghouse-admin-web",
-    "ghcr.io/livepeer/clearinghouse-user-web",
-    "ghcr.io/livepeer/clearinghouse-edge",
-    "ghcr.io/livepeer/clearinghouse-ops",
-    "ghcr.io/livepeer/clearinghouse-remote-signer",
+RELEASE_TARGETS = {
+    "core": ("ghcr.io/livepeer/clearinghouse-core", "deploy/backend.Dockerfile"),
+    "edge": ("ghcr.io/livepeer/clearinghouse-edge", "deploy/edge.Dockerfile"),
+    "remote-signer": (
+        "ghcr.io/livepeer/clearinghouse-remote-signer",
+        "deploy/signer/Dockerfile",
+    ),
 }
+RELEASE_COMPONENTS = {component: target[0] for component, target in RELEASE_TARGETS.items()}
+DEPENDABOT_DOCKER_DIRECTORIES = {"/deploy", "/deploy/signer"}
 SECURITY_CONTROLS = (
     "actions/dependency-review-action@",
     "github/codeql-action/init@",
@@ -104,9 +106,20 @@ def validate(root: Path) -> list[str]:
             errors.append(f"security.yml: missing control: {control}")
 
     release = _read(workflow_dir / "release.yml")
-    for image in sorted(RELEASE_IMAGES):
-        if release.count(f"image: {image}") != 1:
-            errors.append(f"release.yml: canonical image must appear once in build matrix: {image}")
+    matrix_entries = re.findall(
+        r"(?m)^\s+- component: ([a-z0-9-]+)\n"
+        r"\s+image: (ghcr\.io/[a-z0-9./-]+)\n"
+        r"\s+dockerfile: ([A-Za-z0-9./_-]+)$",
+        release,
+    )
+    release_targets = {
+        component: (image, dockerfile) for component, image, dockerfile in matrix_entries
+    }
+    if release_targets != RELEASE_TARGETS or len(matrix_entries) != len(RELEASE_TARGETS):
+        errors.append(
+            "release.yml: build matrix must contain exactly the canonical core, edge, "
+            "and remote-signer image targets"
+        )
     for control in RELEASE_CONTROLS:
         if control not in release:
             errors.append(f"release.yml: missing control: {control}")
@@ -163,6 +176,13 @@ def validate(root: Path) -> list[str]:
     ):
         errors.append(
             "release.yml: all immutable OCI version tags must be checked before promotion"
+        )
+
+    dependabot = _read(root / ".github" / "dependabot.yml")
+    docker_directories = set(re.findall(r"(?m)^\s+- (/deploy(?:/[a-z0-9-]+)?)\s*$", dependabot))
+    if docker_directories != DEPENDABOT_DOCKER_DIRECTORIES:
+        errors.append(
+            "dependabot.yml: Docker updates must cover exactly /deploy and /deploy/signer"
         )
 
     return errors

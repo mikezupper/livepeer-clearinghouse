@@ -1,171 +1,82 @@
-import { OpaqueId, UnsignedInteger } from "@livepeer/clearinghouse-contracts"
 import { Schema } from "effect"
+
+const UnsignedIntegerString = Schema.String.pipe(Schema.pattern(/^(0|[1-9][0-9]*)$/u))
+const PositiveIntegerString = Schema.String.pipe(Schema.pattern(/^[1-9][0-9]*$/u))
+const IsoDateTimeString = Schema.String.pipe(Schema.pattern(
+  /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/u
+))
 
 export const Provider = Schema.Literal("email", "google", "github")
 export type Provider = typeof Provider.Type
-
 export const Providers = Schema.Struct({ providers: Schema.Array(Provider) })
-const PositiveInteger = Schema.String.pipe(Schema.pattern(/^[1-9][0-9]*$/u))
-const SignedInteger = Schema.String.pipe(Schema.pattern(/^-?(0|[1-9][0-9]*)$/u))
-const Unit = Schema.String.pipe(Schema.pattern(/^[a-z][a-z0-9_]{1,31}$/u))
-const SourceInstant = Schema.String.pipe(Schema.pattern(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,9})?Z$/u))
-
-export const AuthSession = Schema.Struct({
-  principal_id: OpaqueId,
-  tenant_id: Schema.optional(OpaqueId),
-  account_id: Schema.optional(OpaqueId),
-  roles: Schema.Array(Schema.Literal("operator", "tenant_admin", "credential_holder")),
-  expires_at: Schema.DateTimeUtc
+export const Session = Schema.Struct({
+  user_id: Schema.String, account_id: Schema.String, email: Schema.String,
+  is_admin: Schema.Boolean, expires_at: IsoDateTimeString
 })
-export type AuthSession = typeof AuthSession.Type
-
-const Money = Schema.Struct({ amount: SignedInteger, unit: Unit })
-const Lease = Schema.Struct({
-  id: OpaqueId,
-  cap: UnsignedInteger,
-  available: UnsignedInteger,
-  pending: UnsignedInteger,
-  settled: UnsignedInteger,
-  unit: Unit,
-  expires_at: Schema.DateTimeUtc
+export type Session = typeof Session.Type
+export const ExactPrice = Schema.Struct({
+  numerator: UnsignedIntegerString, denominator: PositiveIntegerString,
+  currency: Schema.String, quantity_unit: Schema.String
 })
-
-export const Account = Schema.Struct({
-  id: OpaqueId,
-  tenant_id: OpaqueId,
-  display_name: Schema.String,
-  unit: Unit,
-  exposure_cap: UnsignedInteger,
-  status: Schema.Literal("active", "suspended"),
-  created_at: Schema.DateTimeUtc
+export const Offer = Schema.Struct({
+  id: Schema.String, runner_url: Schema.String,
+  orchestrator_address: Schema.NullOr(Schema.String), capability: Schema.String,
+  model: Schema.NullOr(Schema.String),
+  constraints: Schema.Record({ key: Schema.String, value: Schema.String }),
+  price: ExactPrice, observed_at: IsoDateTimeString, expires_at: IsoDateTimeString
 })
-export type Account = typeof Account.Type
-
-export const Balance = Schema.Struct({
-  account_id: OpaqueId,
-  posted: Money,
-  open_lease_exposure: Money,
-  available: Money
-})
-export type Balance = typeof Balance.Type
-
+export type Offer = typeof Offer.Type
+const PageFields = { next_cursor: Schema.NullOr(Schema.String) }
+export const Offers = Schema.Struct({ items: Schema.Array(Offer), ...PageFields })
 export const Credential = Schema.Struct({
-  id: OpaqueId,
-  account_id: OpaqueId,
-  principal_id: OpaqueId,
-  prefix: Schema.String,
-  label: Schema.String,
-  status: Schema.Literal("active", "revoked", "expired"),
-  created_at: Schema.DateTimeUtc
+  id: Schema.String, name: Schema.String, created_at: IsoDateTimeString,
+  revoked_at: Schema.NullOr(IsoDateTimeString)
 })
 export type Credential = typeof Credential.Type
-export const Credentials = Schema.Array(Credential)
-export const IssuedCredential = Schema.Struct({ credential: Credential, secret: Schema.String.pipe(Schema.minLength(32)) })
-
-const ExactRate = Schema.Struct({
-  numerator: UnsignedInteger,
-  denominator: PositiveInteger,
-  charge_unit: Unit,
-  quantity_unit: Schema.Literal("fixed", "seconds", "pixels", "720p-pixel-seconds", "wei")
+export const Credentials = Schema.Struct({ items: Schema.Array(Credential), ...PageFields })
+export const IssuedCredential = Schema.Struct({
+  id: Schema.String, name: Schema.String, token: Schema.String, created_at: IsoDateTimeString
 })
-export const CatalogEntry = Schema.Struct({
-  capability: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(128)),
-  model: Schema.NullOr(Schema.String),
-  rate: ExactRate,
-  available: Schema.Boolean
+export type IssuedCredential = typeof IssuedCredential.Type
+export const Workload = Schema.Struct({
+  id: Schema.String, account_id: Schema.String, capability: Schema.String,
+  model: Schema.NullOr(Schema.String), offer_id: Schema.String,
+  quoted_price: ExactPrice, status: Schema.Literal("active", "expired", "ended", "revoked"),
+  client_reference: Schema.NullOr(Schema.String), runner_session_id: Schema.NullOr(Schema.String),
+  manifest_id: Schema.NullOr(Schema.String), payment_session_id: Schema.NullOr(Schema.String),
+  created_at: IsoDateTimeString, expires_at: IsoDateTimeString
 })
-export type CatalogEntry = typeof CatalogEntry.Type
-export const Catalog = Schema.Array(CatalogEntry)
-
-export const SignerSession = Schema.Struct({
-  id: OpaqueId,
-  token: Schema.String.pipe(Schema.minLength(32)),
-  signer_url: Schema.String,
-  discovery_url: Schema.String,
-  expires_at: Schema.DateTimeUtc,
-  lease: Lease
-})
-export type SignerSession = typeof SignerSession.Type
-export const SignerSessionMetadata = SignerSession.pipe(Schema.omit("token"))
-export type SignerSessionMetadata = typeof SignerSessionMetadata.Type
-export const SignerSessions = Schema.Struct({ items: Schema.Array(SignerSessionMetadata) })
-
-const Cursor = Schema.String.pipe(
-  Schema.minLength(1),
-  Schema.maxLength(512),
-  Schema.pattern(/^[A-Za-z0-9_-]+$/u)
-)
-const Page = Schema.Struct({ next_cursor: Schema.NullOr(Cursor) })
-const PriceSnapshot = Schema.Struct({
-  rate_numerator: UnsignedInteger,
-  rate_denominator: PositiveInteger,
-  charge_unit: Unit,
-  quantity_unit: Schema.Literal("fixed", "seconds", "pixels", "720p-pixel-seconds", "wei"),
-  source: Schema.Literal("rate_card", "signer"),
-  source_id: Schema.optional(OpaqueId),
-  source_version: Schema.String
-})
+export type Workload = typeof Workload.Type
+export const Workloads = Schema.Struct({ items: Schema.Array(Workload), ...PageFields })
+export const IssuedWorkload = Workload.pipe(Schema.extend(Schema.Struct({
+  token: Schema.String, sdk_token: Schema.String,
+  signer_url: Schema.String, discovery_url: Schema.String
+})))
+export type IssuedWorkload = typeof IssuedWorkload.Type
 export const Usage = Schema.Struct({
-  schema_version: Schema.Literal("1.0"),
-  event_id: OpaqueId,
-  reservation_id: OpaqueId,
-  lease_id: OpaqueId,
-  tenant_id: OpaqueId,
-  account_id: OpaqueId,
-  principal_id: OpaqueId,
-  job_id: Schema.optional(OpaqueId),
-  manifest_id: Schema.optional(Schema.String),
-  capability: Schema.String,
-  model: Schema.optional(Schema.String),
-  quantity: Schema.Struct({ value: PositiveInteger, unit: Schema.Literal("fixed", "seconds", "pixels", "720p-pixel-seconds", "wei") }),
-  price_snapshot: PriceSnapshot,
-  producer: Schema.Struct({ id: OpaqueId, kind: Schema.Literal("signer", "collector"), software: Schema.String, software_version: Schema.String }),
-  occurred_at: SourceInstant,
-  source: Schema.Struct({
-    kind: Schema.Literal("go_livepeer_create_signed_ticket", "signer_sequence_reconciliation", "direct"),
-    event_id: Schema.String,
-    sequence_number: Schema.optional(Schema.String),
-    confirmation: Schema.Literal("kafka", "subsequent_signed_state", "direct"),
-    signed_current_time: SourceInstant,
-    signed_current_time_unix_ns: SignedInteger,
-    ticket_count: Schema.optional(Schema.String)
-  })
+  id: Schema.String, workload_id: Schema.NullOr(Schema.String), manifest_id: Schema.String,
+  payment_session_id: Schema.String, capability: Schema.String, quantity: UnsignedIntegerString,
+  quantity_unit: Schema.String, computed_fee: UnsignedIntegerString, currency: Schema.String,
+  ticket_count: Schema.Number, sequence_number: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  occurred_at: IsoDateTimeString,
+  status: Schema.Literal("matched", "unmatched")
 })
 export type Usage = typeof Usage.Type
-export const UsagePage = Schema.Struct({ items: Schema.Array(Usage), page: Page })
-
-export const Charge = Schema.Struct({
-  id: OpaqueId,
-  usage_event_id: OpaqueId,
-  reservation_id: OpaqueId,
-  lease_id: OpaqueId,
-  tenant_id: OpaqueId,
-  account_id: OpaqueId,
-  amount: Schema.Struct({ value: UnsignedInteger, unit: Schema.String }),
-  price_snapshot: Schema.Struct({
-    rate_card_id: OpaqueId,
-    rate_numerator: PositiveInteger,
-    rate_denominator: PositiveInteger,
-    quantity_unit: Schema.Literal("fixed", "seconds", "720p-pixel-seconds")
-  }),
-  created_at: Schema.DateTimeUtc
+export const UsageItems = Schema.Struct({ items: Schema.Array(Usage), ...PageFields })
+export const Cost = Schema.Struct({
+  workload: Workload, measured_quantity: UnsignedIntegerString, measured_unit: Schema.String,
+  quoted_fee: UnsignedIntegerString, computed_fee: UnsignedIntegerString, currency: Schema.String,
+  event_count: Schema.Number
 })
-export type Charge = typeof Charge.Type
-export const ChargePage = Schema.Struct({ items: Schema.Array(Charge), page: Page })
-
-export const IdentityLink = Schema.Struct({
-  id: OpaqueId,
-  provider: Provider,
-  principal_id: OpaqueId,
-  tenant_id: OpaqueId,
-  linked_at: Schema.DateTimeUtc
+export type Cost = typeof Cost.Type
+export const Costs = Schema.Struct({ items: Schema.Array(Cost), ...PageFields })
+export const Summary = Schema.Struct({
+  offers: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  credentials: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  workloads: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  active_workloads: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  usage_events: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  computed_fee: UnsignedIntegerString,
+  currency: Schema.String
 })
-
-export interface NewSignerSession {
-  readonly capability: string
-  readonly model?: string
-  readonly app: string
-  readonly requested_cap: string
-  readonly unit: "wei"
-  readonly ttl_seconds: number
-}
+export type Summary = typeof Summary.Type

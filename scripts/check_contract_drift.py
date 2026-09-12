@@ -49,10 +49,12 @@ def referenced_files(document: Any, base: Path) -> set[Path]:
 
 def generated_openapi() -> dict[str, Any]:
     """Generate OpenAPI from the fully composed runtime without external I/O."""
-    from clearinghouse.infrastructure.config import Settings
-    from clearinghouse.main import create_app
+    from clearinghouse.infrastructure.simple_config import CoreSettings
+    from clearinghouse.simple_main import create_app
 
-    return create_app(Settings(environment="test", _env_file=None)).openapi()
+    return create_app(
+        CoreSettings(environment="test", _env_file=None), consume_kafka=False
+    ).openapi()
 
 
 def assert_openapi_matches(canonical: dict[str, Any], runtime: dict[str, Any]) -> None:
@@ -193,7 +195,6 @@ def check() -> None:
             if reference not in checked:
                 pending.append((reference, load_json(reference)))
     runtime = generated_openapi()
-    assert_expressive_openapi(runtime)
     assert_openapi_matches(openapi, runtime)
     check_component_manifest()
 

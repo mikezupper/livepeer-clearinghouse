@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://clearinghouse.livepeer.org/contracts/events/v1/go-livepeer-gateway-event.schema.json",
   "title": "Raw go-livepeer Kafka GatewayEvent",
-  "description": "Mixed-topic envelope emitted by monitor.SendQueueEventAsync at go-livepeer commit e8dcf7a34744d5cb6b65ba43c0d9160a3975ccc6. Consumers ignore unrelated event types and apply the create_signed_ticket schema only after filtering on type.",
+  "description": "Mixed-topic envelope emitted by monitor.SendQueueEventAsync in go-livepeer v0.9.2 at commit 38eb47d12ab1d2d874fc4c7c061aa1900b7c0bad. Consumers ignore unrelated event types and apply the create_signed_ticket schema only after filtering on type.",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "type", "timestamp", "data"],

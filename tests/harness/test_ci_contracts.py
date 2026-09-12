@@ -42,11 +42,9 @@ class CiContractTests(unittest.TestCase):
         workflow = SOURCE.replace("  contents: read\n", "  contents: write\n", 1)
         self.assertIn("workflow must default to contents: read only", validate(workflow))
         job = SOURCE.replace(
-            "  repository:\n", "  repository:\n    permissions:\n      contents: write\n", 1
+            "  backend:\n", "  backend:\n    permissions:\n      contents: write\n", 1
         )
-        self.assertIn(
-            "job-level permissions are forbidden in required CI: repository", validate(job)
-        )
+        self.assertIn("job-level permissions are forbidden in required CI: backend", validate(job))
 
     def test_rejects_missing_job_and_aggregate_dependency(self) -> None:
         omitted = SOURCE.replace("      - contracts\n", "", 1)
@@ -69,11 +67,11 @@ class CiContractTests(unittest.TestCase):
 
     def test_rejects_make_target_relocated_to_another_job(self) -> None:
         relocated = SOURCE.replace("make quality-contracts", "make temporary-target", 1)
-        relocated = relocated.replace("make quality-python", "make quality-contracts", 1)
-        relocated = relocated.replace("make temporary-target", "make quality-python", 1)
+        relocated = relocated.replace("make test-backend", "make quality-contracts", 1)
+        relocated = relocated.replace("make temporary-target", "make test-backend", 1)
         errors = validate(relocated)
         self.assertIn("job contracts must run exactly: make quality-contracts", errors)
-        self.assertIn("job python-quality must run exactly: make quality-python", errors)
+        self.assertIn("job backend must run exactly: make test-backend", errors)
 
     def test_requires_visual_failure_artifacts(self) -> None:
         unconditional = SOURCE.replace("      - if: failure()\n", "      - if: always()\n", 1)

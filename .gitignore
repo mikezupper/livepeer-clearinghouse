@@ -38,6 +38,7 @@ __pycache__/
 .DS_Store
 
 # Generated frontend and qualification output
+config/lv2v-offers.json
 **/coverage/
 **/dist/
 frontend/**/.vitest/

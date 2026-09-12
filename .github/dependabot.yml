@@ -19,7 +19,6 @@ updates:
   - package-ecosystem: docker
     directories:
       - /deploy
-      - /deploy/ops
       - /deploy/signer
     schedule:
       interval: weekly

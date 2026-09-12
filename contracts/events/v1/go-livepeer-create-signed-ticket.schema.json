@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://clearinghouse.livepeer.org/contracts/events/v1/go-livepeer-create-signed-ticket.schema.json",
   "title": "Raw go-livepeer create_signed_ticket Kafka event",
-  "description": "Compatibility input emitted by go-livepeer monitor.SendQueueEventAsync. This contract is pinned to go-livepeer commit e8dcf7a34744d5cb6b65ba43c0d9160a3975ccc6 and is normalized before domain use.",
+  "description": "Compatibility input emitted by go-livepeer monitor.SendQueueEventAsync. This contract is pinned to go-livepeer v0.9.2 at commit 38eb47d12ab1d2d874fc4c7c061aa1900b7c0bad and is normalized before domain use.",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "type", "timestamp", "data"],

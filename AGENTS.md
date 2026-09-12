@@ -1,7 +1,7 @@
 # Open Clearinghouse agent map
 
 Open Clearinghouse is a vendor-neutral engine for walletless Livepeer network
-spend. The reference distribution is one Python service, PostgreSQL, Redpanda,
+spend. The reference distribution is one Python/SQLite service, Redpanda,
 go-livepeer remote-signer, and separate Lit admin and user applications.
 
 ## Start every session
@@ -34,11 +34,10 @@ discovered work with `bd create ... --deps discovered-from:<current-id>`.
 - Parse untrusted data once at HTTP, Kafka, environment, and database edges.
 - Domain code depends inward only; infrastructure implements typed ports.
 - Use integer or exact decimal arithmetic for quantities and money; never float.
-- Every charge cites one usage event; every usage event cites one lease; every
-  lease cites the balance and policy that authorized it.
-- Authorization and ledger failures fail closed. Writes are idempotent.
+- Every matched usage event cites one immutable quoted workload.
+- Authorization failures fail closed. Signer events are idempotent.
 - Store opaque IDs and hashed credentials. Never log secrets or raw OTPs.
-- Pymthouse integrations are optional adapters, never core dependencies.
+- Enterprise and commercial integrations are optional layers, never core dependencies.
 
 ## Frontend rules
 

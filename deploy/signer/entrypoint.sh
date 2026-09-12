@@ -127,7 +127,14 @@ grep -qi '"ciphertext"' "$SIGNER_ETH_KEYSTORE_PATH" || fail 'keystore must be en
 grep -q '[^[:space:]]' "$SIGNER_PASSWORD_FILE" || fail 'empty/whitespace keystore passwords are not supported'
 
 SIGNER_DATA_DIR=${SIGNER_DATA_DIR:-/data}
-[ -d "$SIGNER_DATA_DIR" ] && [ -w "$SIGNER_DATA_DIR" ] || fail 'mount a writable SIGNER_DATA_DIR owned by UID/GID 10001'
+[ -d "$SIGNER_DATA_DIR" ] || fail 'mount a writable SIGNER_DATA_DIR owned by UID/GID 10001'
+setpriv \
+  --reuid=10001 --regid=10001 --clear-groups \
+  --inh-caps=-chown,-dac_override,-setpcap,-setgid,-setuid \
+  --ambient-caps=-chown,-dac_override,-setpcap,-setgid,-setuid \
+  --bounding-set=-chown,-dac_override,-setpcap,-setgid,-setuid \
+  --no-new-privs test -w "$SIGNER_DATA_DIR" \
+  || fail 'mount a writable SIGNER_DATA_DIR owned by UID/GID 10001'
 case "${1:-}" in --validate-only) printf '%s\n' 'signer configuration valid; run preflight before enabling traffic'; exit 0 ;; '') ;; *) fail 'entrypoint does not accept extra flags; configure named environment settings' ;; esac
 
 # Source files remain operator-owned mode 0600. Copy only the signer custody

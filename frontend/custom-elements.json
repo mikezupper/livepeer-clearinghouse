@@ -13,56 +13,50 @@
           "members": [
             {
               "kind": "field",
-              "name": "api",
-              "default": "AdminApiLive"
+              "name": "auth",
+              "type": {
+                "text": "Auth"
+              },
+              "privacy": "private",
+              "default": "\"checking\""
             },
             {
               "kind": "field",
-              "name": "resource",
+              "name": "route",
               "type": {
-                "text": "ResourceState"
+                "text": "AdminRoute"
               },
               "privacy": "private"
             },
             {
               "kind": "field",
+              "name": "data",
+              "type": {
+                "text": "Overview | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "usersPage",
+              "type": {
+                "text": "ReadonlyArray<User>"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "workloadsPage",
+              "type": {
+                "text": "ReadonlyArray<Workload>"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
               "name": "message",
-              "type": {
-                "text": "string"
-              },
-              "privacy": "private",
-              "default": "\"\""
-            },
-            {
-              "kind": "field",
-              "name": "saving",
-              "type": {
-                "text": "boolean"
-              },
-              "privacy": "private",
-              "default": "false"
-            },
-            {
-              "kind": "field",
-              "name": "proposedStop",
-              "type": {
-                "text": "boolean"
-              },
-              "privacy": "private",
-              "default": "false"
-            },
-            {
-              "kind": "field",
-              "name": "providers",
-              "type": {
-                "text": "ReadonlyArray<\"email\" | \"google\" | \"github\">"
-              },
-              "privacy": "private",
-              "default": "[\"email\"]"
-            },
-            {
-              "kind": "field",
-              "name": "emailAddress",
               "type": {
                 "text": "string"
               },
@@ -80,70 +74,230 @@
             },
             {
               "kind": "field",
-              "name": "invitationSecret",
+              "name": "providers",
               "type": {
-                "text": "string | null"
+                "text": "ReadonlyArray<\"email\" | \"google\" | \"github\">"
               },
               "privacy": "private",
-              "default": "null"
+              "default": "[\"email\"]"
             },
             {
               "kind": "field",
-              "name": "pendingChange",
+              "name": "busy",
               "type": {
-                "text": "PendingChange | null"
+                "text": "boolean"
               },
               "privacy": "private",
-              "default": "null"
+              "default": "false"
             },
             {
               "kind": "field",
-              "name": "location",
+              "name": "denomination",
               "type": {
-                "text": "AdminLocation"
+                "text": "DisplayDenomination"
+              },
+              "privacy": "private",
+              "default": "\"wei\""
+            },
+            {
+              "kind": "field",
+              "name": "unsubscribeDenomination",
+              "type": {
+                "text": "(() => void) | undefined"
               },
               "privacy": "private"
             },
             {
               "kind": "field",
-              "name": "killDialog",
+              "name": "pagination",
+              "privacy": "private",
+              "readonly": true,
+              "default": "new CursorPaginationController(this)"
+            },
+            {
+              "kind": "field",
+              "name": "collectionLoad",
               "type": {
-                "text": "HTMLDialogElement | undefined"
+                "text": "number"
               },
-              "privacy": "private"
+              "privacy": "private",
+              "default": "0"
             },
             {
               "kind": "field",
-              "name": "changeDialog",
-              "type": {
-                "text": "HTMLDialogElement | undefined"
-              },
-              "privacy": "private"
-            },
-            {
-              "kind": "field",
-              "name": "invitationDialog",
-              "type": {
-                "text": "HTMLDialogElement | undefined"
-              },
-              "privacy": "private"
-            },
-            {
-              "kind": "field",
-              "name": "grantKey",
-              "privacy": "private"
-            },
-            {
-              "kind": "field",
-              "name": "clearInvitation",
+              "name": "onPopState",
               "privacy": "private",
               "readonly": true
             },
             {
-              "kind": "field",
-              "name": "syncLocation",
+              "kind": "method",
+              "name": "run",
               "privacy": "private",
-              "readonly": true
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "effect",
+                  "type": {
+                    "text": "Effect.Effect<A, Failure, AdminApi>"
+                  }
+                },
+                {
+                  "name": "success",
+                  "type": {
+                    "text": "(value: A) => void"
+                  }
+                },
+                {
+                  "name": "complete",
+                  "default": "() => undefined",
+                  "type": {
+                    "text": "() => void"
+                  }
+                },
+                {
+                  "name": "active",
+                  "default": "() => true",
+                  "type": {
+                    "text": "() => boolean"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "fail",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "failure",
+                  "type": {
+                    "text": "Failure"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "loadProviders",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "refresh",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "loadCollection",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "submitAuth",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                },
+                {
+                  "name": "verify",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "requestCode",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "verifyCode",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "money",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "numerator",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "currency",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
             },
             {
               "kind": "method",
@@ -165,50 +319,7 @@
             },
             {
               "kind": "method",
-              "name": "refresh",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "authAction",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "effect",
-                  "type": {
-                    "text": "Effect.Effect<void, AdminFailure>"
-                  }
-                },
-                {
-                  "name": "onSuccess",
-                  "type": {
-                    "text": "() => void"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "loadProviders",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "requestEmailCode",
+              "name": "changePage",
               "privacy": "private",
               "return": {
                 "type": {
@@ -219,404 +330,70 @@
                 {
                   "name": "event",
                   "type": {
-                    "text": "SubmitEvent"
+                    "text": "CustomEvent<{ readonly direction: \"next\" | \"previous\" }>"
                   }
                 }
               ]
             },
             {
               "kind": "method",
-              "name": "verifyEmailCode",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "refreshSession",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "logout",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "submit",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "path",
-                  "type": {
-                    "text": "string"
-                  }
-                },
-                {
-                  "name": "method",
-                  "type": {
-                    "text": "\"POST\" | \"PUT\" | \"PATCH\" | \"DELETE\""
-                  }
-                },
-                {
-                  "name": "body",
-                  "type": {
-                    "text": "Readonly<Record<string, unknown>>"
-                  }
-                },
-                {
-                  "name": "idempotencyKey",
-                  "optional": true,
-                  "type": {
-                    "text": "string"
-                  }
-                },
-                {
-                  "name": "onSaved",
-                  "optional": true,
-                  "type": {
-                    "text": "() => void"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "createTenant",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "createAccount",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "createPrincipal",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "createGrant",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "createRate",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "updateTenant",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "updateAccount",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "updatePrincipal",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "setCapability",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "issueInvitation",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "confirmChange",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "change",
-                  "type": {
-                    "text": "PendingChange"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "cancelChange",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "applyConfirmedChange",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "openKillDialog",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "Event"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "closeKillDialog",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "confirmKillSwitch",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "SubmitEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "table",
+              "name": "paginationControl",
               "privacy": "private",
               "return": {
                 "type": {
                   "text": "TemplateResult"
                 }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "action",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
               },
               "parameters": [
                 {
-                  "name": "id",
+                  "name": "event",
                   "type": {
-                    "text": "string"
-                  }
-                },
-                {
-                  "name": "caption",
-                  "type": {
-                    "text": "string"
-                  }
-                },
-                {
-                  "name": "headings",
-                  "type": {
-                    "text": "ReadonlyArray<string>"
-                  }
-                },
-                {
-                  "name": "rows",
-                  "type": {
-                    "text": "ReadonlyArray<ReadonlyArray<unknown>>"
+                    "text": "MouseEvent"
                   }
                 }
               ]
             },
             {
               "kind": "method",
-              "name": "renderOverview",
+              "name": "stop",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "signIn",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "overview",
               "privacy": "private",
               "return": {
                 "type": {
@@ -634,7 +411,7 @@
             },
             {
               "kind": "method",
-              "name": "renderSignIn",
+              "name": "users",
               "privacy": "private",
               "return": {
                 "type": {
@@ -644,7 +421,17 @@
             },
             {
               "kind": "method",
-              "name": "renderControls",
+              "name": "workloads",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "usage",
               "privacy": "private",
               "return": {
                 "type": {
@@ -653,32 +440,16 @@
               },
               "parameters": [
                 {
-                  "name": "session",
+                  "name": "data",
                   "type": {
-                    "text": "AuthSession"
-                  }
-                },
-                {
-                  "name": "route",
-                  "type": {
-                    "text": "AdminRouteId"
+                    "text": "Overview"
                   }
                 }
               ]
             },
             {
               "kind": "method",
-              "name": "renderNavigation",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "TemplateResult"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "renderSession",
+              "name": "operations",
               "privacy": "private",
               "return": {
                 "type": {
@@ -687,9 +458,27 @@
               },
               "parameters": [
                 {
-                  "name": "session",
+                  "name": "data",
                   "type": {
-                    "text": "AuthSession"
+                    "text": "Overview"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "content",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "Overview"
                   }
                 }
               ]
@@ -735,7 +524,7 @@
               "kind": "field",
               "name": "auth",
               "type": {
-                "text": "AuthState"
+                "text": "Auth"
               },
               "privacy": "private",
               "default": "{ tag: \"checking\" }"
@@ -744,10 +533,10 @@
               "kind": "field",
               "name": "providers",
               "type": {
-                "text": "readonly Provider[]"
+                "text": "ReadonlyArray<Provider>"
               },
               "privacy": "private",
-              "default": "[]"
+              "default": "[\"email\"]"
             },
             {
               "kind": "field",
@@ -759,6 +548,86 @@
             },
             {
               "kind": "field",
+              "name": "offers",
+              "type": {
+                "text": "ReadonlyArray<Offer>"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "workloads",
+              "type": {
+                "text": "ReadonlyArray<Workload>"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "credentials",
+              "type": {
+                "text": "ReadonlyArray<Credential>"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "costs",
+              "type": {
+                "text": "ReadonlyArray<Cost>"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "summary",
+              "type": {
+                "text": "Summary | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "capabilityFilter",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "modelFilter",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "estimateOfferId",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "quoteInputs",
+              "type": {
+                "text": "QuoteInputs"
+              },
+              "privacy": "private",
+              "default": "initialQuoteInputs"
+            },
+            {
+              "kind": "field",
               "name": "notice",
               "type": {
                 "text": "Notice | undefined"
@@ -767,124 +636,77 @@
             },
             {
               "kind": "field",
-              "name": "account",
-              "type": {
-                "text": "Account | undefined"
-              },
-              "privacy": "private"
-            },
-            {
-              "kind": "field",
-              "name": "balance",
-              "type": {
-                "text": "Balance | undefined"
-              },
-              "privacy": "private"
-            },
-            {
-              "kind": "field",
-              "name": "credentials",
-              "type": {
-                "text": "readonly Credential[]"
-              },
-              "privacy": "private",
-              "default": "[]"
-            },
-            {
-              "kind": "field",
-              "name": "sessions",
-              "type": {
-                "text": "readonly SignerSessionMetadata[]"
-              },
-              "privacy": "private",
-              "default": "[]"
-            },
-            {
-              "kind": "field",
-              "name": "catalog",
-              "type": {
-                "text": "readonly CatalogEntry[]"
-              },
-              "privacy": "private",
-              "default": "[]"
-            },
-            {
-              "kind": "field",
-              "name": "usage",
-              "type": {
-                "text": "readonly Usage[]"
-              },
-              "privacy": "private",
-              "default": "[]"
-            },
-            {
-              "kind": "field",
-              "name": "charges",
-              "type": {
-                "text": "readonly Charge[]"
-              },
-              "privacy": "private",
-              "default": "[]"
-            },
-            {
-              "kind": "field",
-              "name": "usageCursor",
-              "type": {
-                "text": "string | null | undefined"
-              },
-              "privacy": "private",
-              "default": "undefined"
-            },
-            {
-              "kind": "field",
-              "name": "chargesCursor",
-              "type": {
-                "text": "string | null | undefined"
-              },
-              "privacy": "private",
-              "default": "undefined"
-            },
-            {
-              "kind": "field",
-              "name": "inFlight",
-              "type": {
-                "text": "ReadonlySet<string>"
-              },
-              "privacy": "private",
-              "default": "new Set()"
-            },
-            {
-              "kind": "field",
               "name": "secret",
               "type": {
                 "text": "Secret | undefined"
               },
-              "privacy": "private",
-              "default": "undefined"
+              "privacy": "private"
             },
             {
               "kind": "field",
-              "name": "pendingCreate",
+              "name": "busy",
               "type": {
-                "text": "PendingCreate | undefined"
+                "text": "boolean"
               },
               "privacy": "private",
-              "default": "undefined"
+              "default": "false"
             },
             {
               "kind": "field",
-              "name": "refreshKeys",
+              "name": "denomination",
               "type": {
-                "text": "ReadonlyMap<string, string>"
+                "text": "DisplayDenomination"
               },
               "privacy": "private",
-              "default": "new Map()"
+              "default": "\"wei\""
+            },
+            {
+              "kind": "field",
+              "name": "secretDialog",
+              "type": {
+                "text": "HTMLDialogElement | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "unsubscribeDenomination",
+              "type": {
+                "text": "(() => void) | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "pagination",
+              "privacy": "private",
+              "readonly": true,
+              "default": "new CursorPaginationController(this)"
+            },
+            {
+              "kind": "field",
+              "name": "routeLoad",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private",
+              "default": "0"
             },
             {
               "kind": "field",
               "name": "onPopState",
               "privacy": "private",
               "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "syncOfferFilters",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
             },
             {
               "kind": "method",
@@ -909,94 +731,17 @@
                   }
                 },
                 {
-                  "name": "settled",
+                  "name": "complete",
                   "default": "() => undefined",
                   "type": {
                     "text": "() => void"
                   }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "runCommand",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "command",
-                  "type": {
-                    "text": "string"
-                  }
                 },
                 {
-                  "name": "effect",
+                  "name": "active",
+                  "default": "() => true",
                   "type": {
-                    "text": "Effect.Effect<A, UserFailure, UserApi>"
-                  }
-                },
-                {
-                  "name": "success",
-                  "type": {
-                    "text": "(value: A) => void"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "createKey",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "string"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "input",
-                  "type": {
-                    "text": "NewSignerSession"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "refreshKey",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "string"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "id",
-                  "type": {
-                    "text": "string"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "clearRefreshKey",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "id",
-                  "type": {
-                    "text": "string"
+                    "text": "() => boolean"
                   }
                 }
               ]
@@ -1052,7 +797,77 @@
                 {
                   "name": "event",
                   "type": {
-                    "text": "Event"
+                    "text": "MouseEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "changePage",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "CustomEvent<{ readonly direction: \"next\" | \"previous\" }>"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "paginationControl",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "filterOffers",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "submit",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "SubmitEvent"
+                  }
+                },
+                {
+                  "name": "kind",
+                  "type": {
+                    "text": "\"request\" | \"verify\" | \"credential\" | \"workload\""
                   }
                 }
               ]
@@ -1095,7 +910,7 @@
             },
             {
               "kind": "method",
-              "name": "redeem",
+              "name": "createCredential",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1113,7 +928,7 @@
             },
             {
               "kind": "method",
-              "name": "issueCredential",
+              "name": "createWorkload",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1131,43 +946,37 @@
             },
             {
               "kind": "method",
-              "name": "createSession",
+              "name": "money",
               "privacy": "private",
               "return": {
                 "type": {
-                  "text": "void"
+                  "text": "TemplateResult"
                 }
               },
               "parameters": [
                 {
-                  "name": "event",
+                  "name": "numerator",
                   "type": {
-                    "text": "SubmitEvent"
+                    "text": "string | bigint"
+                  }
+                },
+                {
+                  "name": "denominator",
+                  "type": {
+                    "text": "string | bigint"
+                  }
+                },
+                {
+                  "name": "currency",
+                  "type": {
+                    "text": "string"
                   }
                 }
               ]
             },
             {
               "kind": "method",
-              "name": "loadMore",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "kind",
-                  "type": {
-                    "text": "\"usage\" | \"charges\""
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "handleAction",
+              "name": "chooseEstimateOffer",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1185,17 +994,7 @@
             },
             {
               "kind": "method",
-              "name": "logout",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "showSecret",
+              "name": "updateQuoteInput",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1204,48 +1003,34 @@
               },
               "parameters": [
                 {
-                  "name": "heading",
+                  "name": "event",
                   "type": {
-                    "text": "string"
-                  }
-                },
-                {
-                  "name": "value",
-                  "type": {
-                    "text": "string"
-                  }
-                },
-                {
-                  "name": "instructions",
-                  "type": {
-                    "text": "string"
+                    "text": "Event"
                   }
                 }
               ]
             },
             {
               "kind": "method",
-              "name": "clearSecret",
+              "name": "action",
               "privacy": "private",
               "return": {
                 "type": {
                   "text": "void"
                 }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "renderNotice",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "TemplateResult | typeof nothing"
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
                 }
-              }
+              ]
             },
             {
               "kind": "method",
-              "name": "renderSignIn",
+              "name": "signIn",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1255,7 +1040,7 @@
             },
             {
               "kind": "method",
-              "name": "renderUnscoped",
+              "name": "overview",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1266,14 +1051,14 @@
                 {
                   "name": "session",
                   "type": {
-                    "text": "AuthSession"
+                    "text": "Session"
                   }
                 }
               ]
             },
             {
               "kind": "method",
-              "name": "renderOverview",
+              "name": "discoveryPage",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1283,7 +1068,25 @@
             },
             {
               "kind": "method",
-              "name": "renderCredentials",
+              "name": "estimateFields",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "unit",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "estimatePage",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1293,7 +1096,7 @@
             },
             {
               "kind": "method",
-              "name": "renderSessions",
+              "name": "workloadsPage",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1303,7 +1106,7 @@
             },
             {
               "kind": "method",
-              "name": "renderCatalog",
+              "name": "credentialsPage",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1313,7 +1116,7 @@
             },
             {
               "kind": "method",
-              "name": "renderUsage",
+              "name": "usagePage",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1323,17 +1126,7 @@
             },
             {
               "kind": "method",
-              "name": "renderCharges",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "TemplateResult"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "renderProfile",
+              "name": "profile",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1344,14 +1137,14 @@
                 {
                   "name": "session",
                   "type": {
-                    "text": "AuthSession"
+                    "text": "Session"
                   }
                 }
               ]
             },
             {
               "kind": "method",
-              "name": "renderRoute",
+              "name": "content",
               "privacy": "private",
               "return": {
                 "type": {
@@ -1362,20 +1155,10 @@
                 {
                   "name": "session",
                   "type": {
-                    "text": "AuthSession"
+                    "text": "Session"
                   }
                 }
               ]
-            },
-            {
-              "kind": "method",
-              "name": "renderNavigation",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "TemplateResult"
-                }
-              }
             }
           ],
           "superclass": {
@@ -1632,7 +1415,15 @@
                 "type": {
                   "text": "void"
                 }
-              }
+              },
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
+                }
+              ]
             },
             {
               "kind": "method",

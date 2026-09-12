@@ -25,3 +25,9 @@ Maintainers triage accepted work into Beads. Questions about a private or
 modified deployment remain the deploying operator's responsibility; include a
 minimal reproduction against the unmodified reference distribution when
 possible.
+
+The supported reference profile is the documented single-node distribution:
+edge, one core process backed by SQLite, Redpanda, and the unmodified pinned
+remote signer. High-availability layouts, external storage adapters, billing or
+organization services, and other enterprise extensions are owned and supported
+by the deployment that adds them.

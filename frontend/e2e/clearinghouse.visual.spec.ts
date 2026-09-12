@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test"
 import { appUrl, installMockApi } from "./mock-api.js"
 
 const applications = ["admin", "user"] as const
-const expectedNavigationIcons = { admin: 9, user: 7 } as const
+const expectedNavigationIcons = { admin: 5, user: 7 } as const
 
 const expectNoDocumentOverflow = async (page: Page): Promise<void> => {
   const dimensions = await page.evaluate(() => {

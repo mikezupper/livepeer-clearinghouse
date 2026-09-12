@@ -2,6 +2,7 @@
 
 | Document | Status | Reverify when |
 | --- | --- | --- |
+| [Simplified core contracts](simple-core.md) | Accepted | A core entity, identifier, price rule, storage contract, or extension boundary changes |
 | [Core beliefs](core-beliefs.md) | Accepted | A core invariant or domain boundary changes |
 | [Adapter loading](adapter-loading.md) | Accepted | A port, plugin ABI, or deployment model changes |
 | [Remote-signer metering](remote-signer-metering.md) | Accepted | The pinned signer wire contract or producer changes |

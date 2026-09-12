@@ -38,8 +38,11 @@ maintained in parallel Markdown files.
 
 Branch protection and required status checks are the enforcement boundary. At
 least one maintainer review is expected for routine changes; security-sensitive,
-release, migration, and custody changes should receive review from a maintainer
-familiar with that area. No review can waive the required quality gates.
+release, stored-schema, public-contract, and signer-custody changes should
+receive review from a maintainer familiar with that area. A deployment-owned
+enterprise extension does not become part of the core's governance or support
+surface merely because it implements a public port. No review can waive the
+required quality gates.
 
 The repository intentionally does not declare a `CODEOWNERS` rule until an
 administrator verifies the canonical GitHub user or team with write access.

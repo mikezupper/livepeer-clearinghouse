@@ -170,31 +170,35 @@ export class OchAppShell extends LitElement {
   }
 
   private toggleNavigation(): void {
-    const open = !this.navigationOpen
-    this.setNavigationOpen(open)
-    if (open) {
-      this.updateComplete.then(() => {
-        const closeButton = this.renderRoot.querySelector("[part~='sidebar-close-button']")
-        if (closeButton instanceof HTMLButtonElement) closeButton.focus()
-      })
+    if (this.navigationOpen) {
+      this.closeNavigation()
+      return
     }
+    this.setNavigationOpen(true)
+    requestAnimationFrame(() => {
+      const closeButton = this.renderRoot.querySelector("[part~='sidebar-close-button']")
+      if (closeButton instanceof HTMLButtonElement) closeButton.focus()
+    })
   }
 
   private closeNavigation(): void {
+    if (!this.navigationOpen) return
     this.setNavigationOpen(false)
+    requestAnimationFrame(() => {
+      const button = this.renderRoot.querySelector("[part~='menu-button']")
+      if (button instanceof HTMLButtonElement) button.focus()
+    })
   }
 
-  private handleNavigationClick(): void {
-    this.closeNavigation()
+  private handleNavigationClick(event: MouseEvent): void {
+    if (event.composedPath().some((target) => target instanceof HTMLAnchorElement)) {
+      this.closeNavigation()
+    }
   }
 
   private handleKeydown(event: KeyboardEvent): void {
     if (event.key !== "Escape" || !this.navigationOpen) return
     this.closeNavigation()
-    this.updateComplete.then(() => {
-      const button = this.renderRoot.querySelector("[part~='menu-button']")
-      if (button instanceof HTMLButtonElement) button.focus()
-    })
   }
 
   protected render() {

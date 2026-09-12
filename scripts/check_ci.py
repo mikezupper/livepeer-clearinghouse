@@ -17,20 +17,12 @@ NEED = re.compile(r"(?m)^      - ([a-z][a-z0-9-]*)\s*$")
 MAKE = re.compile(r"(?m)^\s*- run:\s+make ([a-z][a-z0-9-]*)\s*$")
 ALLOWED_TRIGGERS = frozenset({"pull_request", "push", "workflow_dispatch"})
 JOB_TARGETS = {
-    "repository": "quality-repository",
-    "python-quality": "quality-python",
-    "backend-unit": "test-backend-unit",
-    "migrations": "test-migrations",
-    "backend-live": "test-backend-live",
+    "backend": "test-backend",
     "frontend-quality": "quality-frontend",
-    "frontend-admin": "test-admin-web",
-    "frontend-user": "test-user-web",
-    "frontend-shared": "test-shared-web",
+    "frontend-tests": "test-frontend",
     "contracts": "quality-contracts",
-    "browser-e2e": "test-browser-e2e",
-    "browser-accessibility": "test-browser-accessibility",
-    "browser-visual": "test-browser-visual",
-    "browser-smoke": "test-browser-smoke",
+    "browser-visual": "test-browser",
+    "compose": "validate",
 }
 
 

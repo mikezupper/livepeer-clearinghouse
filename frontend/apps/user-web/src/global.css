@@ -4,6 +4,7 @@
   user-app {
     --och-user-content-gap: var(--och-space-2);
     --och-user-card-min-size: 12rem;
+    --och-user-estimator-min-size: 20rem;
     --och-user-dialog-max-size: 36rem;
     --och-user-table-cell-padding: var(--och-space-1);
     --och-user-control-padding: var(--och-space-1) var(--och-space-2);
@@ -36,6 +37,14 @@
   user-app::part(table-scroll) {
     max-inline-size: 100%;
   }
+
+  user-app::part(estimator-grid) {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(100%, var(--och-user-estimator-min-size)), 1fr)
+    );
+    align-items: start;
+  }
 }
 
 @layer user-components {
@@ -50,6 +59,14 @@
 
   user-app::part(navigation-heading) {
     padding: var(--och-space-2) var(--och-space-2) var(--och-space-1);
+  }
+
+  user-app::part(navigation-list) {
+    display: grid;
+    gap: var(--och-space-0);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   user-app::part(navigation-link) {
@@ -122,6 +139,34 @@
   user-app::part(available-metric) {
     border-color: var(--och-color-brand);
     background: var(--och-color-brand-soft);
+  }
+
+  user-app::part(estimate-result) {
+    border-color: var(--och-color-brand);
+    background: color-mix(
+      in oklch,
+      var(--och-color-brand-soft) 42%,
+      var(--och-color-surface-raised)
+    );
+  }
+
+  user-app::part(estimate-row) {
+    display: grid;
+    grid-template-columns: minmax(8rem, 0.7fr) minmax(0, 1.3fr);
+    gap: var(--och-space-2);
+    padding-block: var(--och-space-1);
+    border-block-end: var(--och-border-width) solid var(--och-color-border);
+  }
+
+  user-app::part(estimate-term),
+  user-app::part(hint) {
+    color: var(--och-color-text-muted);
+  }
+
+  user-app::part(estimate-value) {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
   }
 
   user-app::part(numeric-value),

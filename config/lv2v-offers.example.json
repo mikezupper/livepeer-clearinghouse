@@ -1,0 +1,18 @@
+{
+  "schema": "livepeer.clearinghouse.lv2v-offers.v1",
+  "offers": [
+    {
+      "orchestrator_url": "https://orchestrator.example:8936",
+      "orchestrator_address": "0x0000000000000000000000000000000000000000",
+      "capability": "live-video-to-video",
+      "model": "model-id",
+      "constraints": {"source": "operator-reviewed-getorchestrator"},
+      "price": {
+        "numerator": "1",
+        "denominator": "1",
+        "currency": "wei",
+        "quantity_unit": "720p-pixel-seconds"
+      }
+    }
+  ]
+}

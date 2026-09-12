@@ -6,409 +6,275 @@
 [![Release](https://github.com/livepeer/clearinghouse/actions/workflows/release.yml/badge.svg)](https://github.com/livepeer/clearinghouse/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Open Clearinghouse is a vendor-neutral service for walletless spend on the
-Livepeer network. It lets an operator grant exact-value credit, lets an
-application obtain a bounded signer session without holding an Ethereum key,
-and turns confirmed remote-signer usage into reproducible charges and a
-double-entry balance.
+Open Clearinghouse is a small, extensible access and metering core for Livepeer workloads. A user signs in without a wallet, discovers runner capabilities and advertised prices, creates short-lived workload access for the official Python gateway SDK, and sees measured usage and cost. A configured administrator can inspect the system and stop new signer authorization globally.
 
-The reference distribution is a production-oriented walking slice: a Python
-API and metering worker, PostgreSQL, a Kafka-compatible Redpanda broker, an
-unmodified pinned go-livepeer remote signer, and separate Lit applications for
-operators and account users. It is maintained by Livepeer at
-[`livepeer/clearinghouse`](https://github.com/livepeer/clearinghouse).
+The reference distribution is maintained by Livepeer at [`livepeer/clearinghouse`](https://github.com/livepeer/clearinghouse).
 
-## Why this exists
+## Motivation
 
-Livepeer applications should not each have to build wallet custody, admission
-control, identity, usage correlation, pricing, and accounting before they can
-offer a walletless experience. Open Clearinghouse separates those concerns
-from a product's commercial stack and makes the financial path explicit:
+Applications using Livepeer should not need to embed Ethereum custody or rebuild identity, discovery, quoted access, and usage correlation. The core deliberately does only the shared protocol work:
 
-1. an operator posts an audited grant to an account;
-2. a credential holder opens a capped, expiring lease;
-3. the clearinghouse reserves spend immediately before go-livepeer signs;
-4. go-livepeer publishes its normal `create_signed_ticket` event; and
-5. the metering worker settles one usage event, one charge, and balanced ledger
-   postings in a single database transaction.
+1. authenticate a person and give them one personal account;
+2. expose current Livepeer capabilities, constraints, orchestrators, and exact advertised prices;
+3. bind a short-lived credential to one immutable workload quote;
+4. authorize the unmodified go-livepeer remote signer against that quote; and
+5. attribute `create_signed_ticket` events to the workload, user, and account.
 
-The service is intentionally not a billing platform or hosted control plane.
-OpenMeter, Stripe, Auth0, Turnkey, Pymthouse, marketplace, merchant-resale, and
-support-console integrations are outside this walking slice. Pymthouse can be
-integrated later through trusted adapters; it is not a core dependency.
+The reported cost view keeps two facts distinct: the cost calculated from the observed quote and measured quantity, and the fee reported by the signer. This makes discrepancies visible without turning the core into a ledger or billing platform.
 
-## What is included
+OpenMeter, Stripe, enterprise tenancy/RBAC, grants, double-entry accounting, retention automation, and support tooling are intentionally outside the core. They can be layered on through versioned HTTP/event contracts and typed ports without forking domain behavior.
 
-| Component | Reference implementation |
+## Included functionality
+
+| Area | Implementation |
 | --- | --- |
-| API and metering worker | Python 3.14, FastAPI, SQLAlchemy, Alembic, and UV |
-| Durable authority | PostgreSQL 18 for identity, policy, leases, receipts, usage, charges, ledger, audit, and checkpoints |
-| Signer event transport | Single-node Redpanda with a dedicated, one-partition metering topic |
-| Remote signer | Unmodified, commit-pinned upstream go-livepeer behind a hardened wrapper |
-| Admin application | Lit, Effect, TypeScript, Vite, and real-browser tests at `/admin/` |
-| User application | Lit, Effect, TypeScript, Vite, and real-browser tests at `/` |
-| Public edge | Caddy, with only a loopback port published by the reference Compose stack |
+| Identity | Resend-compatible six-digit email OTP; optional Google OIDC and GitHub OAuth |
+| Accounts | One direct personal account per authenticated user; one configured admin email |
+| Discovery | Livepeer runner capability/model/constraint discovery with exact rational prices |
+| SDK access | Revocable account API credentials and short-lived per-workload SDK tokens |
+| Signer policy | Quote, expiry, orchestrator, state-binding, credential, and global-stop checks |
+| Metering | Redpanda ingestion of pinned go-livepeer `create_signed_ticket` events |
+| Storage | SQLite with WAL, foreign keys, a busy timeout, and one serialized writer boundary |
+| Web | Separate Lit/Effect user and admin apps, served together by Caddy |
+| Runtime | Four long-running services: edge, core, Redpanda, and remote signer |
 
-The admin application manages tenants, accounts, principals, grants, rate
-cards, catalog policy, invitations, the kill switch, adapters, and operational
-status. The user application manages credentials and signer sessions and shows
-the account catalog, balance, usage, and charges. Both use native semantic HTML
-inside Shadow DOM. Global CSS owns design tokens, typography, themes, and
-application layout; components consume inherited custom properties and expose
-Shadow Parts for intentional global control. Inline styles are prohibited.
-
-See the [walking-slice specification](docs/product-specs/walking-slice.md) for
-the supported journeys and explicit non-goals.
-
-## Architecture at a glance
+## Architecture
 
 ```text
-browser ──> loopback/HTTPS edge ──> user web or admin web
-                   │
-                   ├── /v1, /health ──> Python API ──> PostgreSQL
-                   │                                    ▲
-                   └── signer protocol ─> go-livepeer   │ atomic settlement
-                                             │          │
-                                             └──────> Redpanda ──> metering worker
+browser / Python gateway SDK
+             │
+             ▼
+      Caddy edge (:8080)
+       │       │       └──────── signer protocol ───────┐
+       │       └── /admin ── admin Lit app              │
+       ├── / ─────────────── user Lit app               ▼
+       └── /v1, /health ── Python core ◀── webhook ─ go-livepeer
+                                │                         │
+                                ├── SQLite               │
+                                └── Kafka consumer ◀─ Redpanda
 ```
 
-PostgreSQL is the financial and authorization authority. Redpanda transports
-signer evidence; it is not a balance store. Browser, email/OAuth providers,
-chain RPC, signer callback, and Kafka payloads are separate trust boundaries.
-The database and broker are on private internal networks and are not published
-to the host.
+The API and Kafka consumer run in one supervised Python process so SQLite has a controlled writer boundary. The edge image contains both independently built web applications. The broker and SQLite database are not published to the host. The remote signer is the unmodified pinned upstream image; its custody files remain operator-owned.
 
-The backend uses inward-only dependencies:
+Read [ARCHITECTURE.md](ARCHITECTURE.md) and the [simplified core design](docs/design-docs/simple-core.md) before changing a boundary.
 
-```text
-domain types <- application workflows and typed ports <- adapters/infrastructure
-```
+## Quick start
 
-Untrusted HTTP, Kafka, environment, and database data is decoded at its edge.
-Money and quantities use integers or exact decimals, never binary floating
-point. Authorization and ledger failures fail closed, and writes use bounded
-idempotency keys and database serialization. Adapters are selected, validated,
-and wired explicitly at process startup; the reference image does not scan for
-annotations or load arbitrary modules from environment variables.
-
-Read [ARCHITECTURE.md](ARCHITECTURE.md), the
-[core invariants](docs/design-docs/core-beliefs.md), and the
-[adapter model](docs/design-docs/adapter-loading.md) before changing a boundary.
-
-## Five-minute local start
-
-You need Git, GNU Make or compatible `make`, Docker Engine, the Docker Compose
-plugin, and UV 0.12.12 or newer. UV provisions the pinned Python interpreter
-used by deployment preflight; the Docker build supplies the service and Node
-toolchains, so no host Node install is needed for this first check.
+Prerequisites: Git, Docker Engine with Compose, Make, and UV 0.12.12 or newer.
 
 ```sh
 git clone https://github.com/livepeer/clearinghouse.git
 cd clearinghouse
 make init-env
-make smoke
 ```
 
-`make init-env` creates a mode-0600 `.env` from `.env.example`.
-`make smoke` generates local-only development secrets, builds and starts the
-keyless core services, and proves edge routing, API readiness, authorization
-denial, PostgreSQL state, Redpanda delivery, normalization, quarantine, and
-durable consumer offsets with a synthetic nonfinancial event.
-
-After it passes, open `http://127.0.0.1:8080/` for the user application and
-`http://127.0.0.1:8080/admin/` for the admin application. Email sign-in will
-work only after `.env` points to a usable Resend or Resend-compatible endpoint;
-the generated development API key is deliberately not a delivery credential.
-
-Useful lifecycle commands are:
-
-```sh
-make ps       # show service health
-make logs     # follow bounded container output
-make down     # stop containers and preserve named volumes
-make destroy DESTROY=1  # explicitly delete this Compose project's volumes
-```
-
-Run `make help` for the complete supported command surface. Do not use
-`DESTROY=1` against data you intend to keep.
-
-## Authentication and onboarding
-
-Email one-time codes delivered through the official Resend Python SDK are the
-default sign-in method. Configure:
-
-| Setting | Purpose |
-| --- | --- |
-| `CLEARINGHOUSE_AUTH_RESEND_API_URL` | Resend API base URL or an HTTPS-compatible custom endpoint |
-| `CLEARINGHOUSE_AUTH_RESEND_API_KEY_HOST_FILE` | Host file containing the API key |
-| `CLEARINGHOUSE_AUTH_RESEND_FROM` | Verified sender address |
-| `CLEARINGHOUSE_AUTH_PEPPER_HOST_FILE` | Independent keyed-hash secret for auth data |
-| `CLEARINGHOUSE_AUTH_ALLOWED_ORIGINS` | Comma-separated exact browser origins |
-| `CLEARINGHOUSE_AUTH_SUCCESS_REDIRECT_URL` | Post-authentication browser destination |
-
-The code is six digits, short lived, attempt limited, and stored only as a
-keyed hash. Google OIDC and GitHub OAuth are optional. A provider appears only
-when its `*_ENABLED` value is true and its client ID, secret host file, and
-redirect URI are all configured. Partial provider configuration prevents
-startup. OAuth uses authorization code flow, PKCE, one-shot state, and—in the
-Google flow—an OIDC nonce.
-
-Google uses `CLEARINGHOUSE_AUTH_GOOGLE_ENABLED`,
-`CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_ID`,
-`CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_SECRET_HOST_FILE`, and
-`CLEARINGHOUSE_AUTH_GOOGLE_REDIRECT_URI`. GitHub uses the corresponding
-`CLEARINGHOUSE_AUTH_GITHUB_*` names shown in `.env.example`.
-
-A newly verified identity is active but unscoped and has no tenant or operator
-permissions. An operator or authorized tenant administrator must issue an
-invitation that links it to an existing scoped principal. A first deployment
-can instead provide the paired one-shot
-`CLEARINGHOUSE_OPERATOR_BOOTSTRAP_EMAIL_HOST_FILE` and
-`CLEARINGHOUSE_OPERATOR_BOOTSTRAP_SECRET_HOST_FILE`; remove both after a
-successful bootstrap. Browser mutations require the `och_session` cookie,
-exact Origin, and matching `X-CSRF-Token`/`och_csrf` value.
-
-See [authentication design](docs/design-docs/authentication.md) and the
-[security model](docs/SECURITY.md) for the complete contract.
-
-## Configuration
-
-`.env.example` is the canonical configuration inventory. Copy it with
-`make init-env`, keep `.env` untracked, and replace every marked value before a
-real deployment. Configuration is parsed once and invalid or incomplete
-production settings fail startup.
-
-| Area | Principal settings |
-| --- | --- |
-| Runtime/database | `CLEARINGHOUSE_ENVIRONMENT`, `CLEARINGHOUSE_LOG_LEVEL`, `POSTGRES_USER`, `POSTGRES_DB`, `POSTGRES_PASSWORD_HOST_FILE`, pool size and timeout |
-| Browser/auth | Resend settings, OTP/rate limits, session lifetimes, secure-cookie flag, allowed origins, success redirect, optional OAuth settings |
-| Bootstrap/credentials | Auth and credential pepper host files, invitation lifetime, optional paired bootstrap files |
-| Signer/admission | Webhook secret and session pepper files, global exposure cap, signer ID and browser-facing signer/discovery URLs |
-| Metering | Internal broker address, topic, consumer group/client IDs, payload bound, reconciliation interval/batch size, confirmation grace, heartbeat thresholds |
-| Real signer | Mode, network, chain/controller, RPC URL, address, encrypted V3 keystore/password files, funding floors, internal webhook URL, Kafka credentials |
-| Recovery/operations | Age recipient/identity, encrypted backup volume, backup key ID, and operator actor ID |
-| Telemetry | OTLP endpoint and export interval |
-
-All application, PostgreSQL, OAuth, signer, and backup secrets are mounted from
-host files. Development helpers create only ignored mode-0600 non-custody
-secrets under `tmp/runtime-secrets`. Production secret files must be managed
-outside the checkout and Docker build context. The signer key and password are
-never generated by the repository.
-
-Production uses `CLEARINGHOUSE_ENVIRONMENT=production`, HTTPS URLs, secure
-cookies, a deliverable sender, strong independent secrets, an exact public
-origin list, and operator-managed custody files. Run:
-
-```sh
-make deployment-preflight
-make operations-ownership-check \
-  OPERATIONS_OWNERSHIP_FILE=/absolute/path/operations-ownership.env
-```
-
-The [reference deployment guide](docs/operations/deployment.md) explains secret
-ownership, process privileges, network boundaries, image selection, and
-production differences.
-
-## Running the real remote signer
-
-The default Compose model includes the remote signer; it is not hidden behind
-an optional profile. Because the accepted upstream binary has no safe keyless
-mode, `make up` refuses to start it without all of the following:
-
-- an operator-owned encrypted Ethereum V3 keystore and separate password file;
-- the matching signer address, selected chain and controller;
-- an RPC URL, acknowledging that the pinned upstream signer may log its full value;
-- configured minimum gas, TicketBroker deposit, and reserve; and
-- reachable clearinghouse webhook and dedicated Kafka topic.
-
-Configure the signer section of `.env`, then run:
+Edit `.env`, supply the signer custody files described below, then:
 
 ```sh
 make signer-preflight
 make up
-make signer-smoke
+make ps
 ```
 
-To publish a static orchestrator list through the signer discovery endpoint,
-keep `SIGNER_REMOTE_DISCOVERY=true` and set, for example,
-`SIGNER_ORCH_ADDR=https://orch-a.example:8935,https://orch-b.example:8935`.
-These are orchestrator service endpoints, not Ethereum addresses. See the
-signer operations guide for validation and the alternative gateway-side model.
+Open `http://localhost:8080/` for users and `http://localhost:8080/admin/` for administration. The development defaults also trust `http://127.0.0.1:8080` for browser mutations. `make down` preserves SQLite, signer, and Redpanda volumes. `make destroy DESTROY=1` explicitly removes them.
 
-`make signer-preflight` performs static, key/address, RPC, network, and funding
-checks without logging secret material. `make signer-smoke` starts the stack and
-runs read-only network-namespace diagnostics. A funded signing request is a
-separate deliberate operator action; automated release qualification does not
-claim to perform it. Never publish or proxy the signer's loopback-only admin
-listener.
+## Configuration
 
-See [remote-signer operations](docs/operations/signer.md).
+`.env.example` is the complete inventory. `.env` is ignored and must never be committed.
 
-## Metering and accounting guarantees
+### Core and authentication
 
-No go-livepeer patch is required. The clearinghouse correlates two observations
-from the pinned unmodified signer:
+| Variable | Meaning |
+| --- | --- |
+| `CLEARINGHOUSE_ENVIRONMENT` | `development`, `test`, or `production` |
+| `CLEARINGHOUSE_PUBLIC_URL` | Browser-facing edge base URL |
+| `CLEARINGHOUSE_ALLOWED_ORIGINS` | Comma-separated exact origins allowed for browser mutations |
+| `CLEARINGHOUSE_COOKIE_SECURE` | Must be `true` with HTTPS in production |
+| `CLEARINGHOUSE_ADMIN_EMAIL` | The email whose personal account receives admin access |
+| `CLEARINGHOUSE_AUTH_PEPPER` | Independent keyed-hash secret for OTPs and browser/API credentials |
+| `CLEARINGHOUSE_WORKLOAD_PEPPER` | Independent keyed-hash secret for workload access tokens |
+| `CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET` | Shared private credential for the signer callback |
 
-1. the authenticated authorization callback creates a conservative pending
-   reservation before signing; and
-2. a `create_signed_ticket` event normally confirms the signed request and its
-   computed fee through the dedicated Redpanda topic.
+Production requires HTTPS, secure cookies, and at least 32-character non-placeholder peppers/secrets.
 
-The consumer commits deduplication, validated usage, a charge, balanced ledger
-postings, reservation settlement, and its next Kafka offset atomically. A
-duplicate cannot create another charge. A fork, poison event, fee above the
-reservation, or expired broker offset is quarantined or becomes explicit
-reconciliation state; it does not silently release pending exposure.
+### Email OTP and optional OAuth
 
-Kafka delivery is asynchronous inside go-livepeer and can be lost after queue
-saturation or exhausted retries. A later signer sequence proves the prior
-signed state escaped, but a lost final event can remain an unresolved
-conservative hold. Operators must alert on producer errors, consumer lag,
-sequence gaps, poison events, and aging reservations. The exact supported
-payment shapes and residual risks are documented in
-[remote-signer metering](docs/design-docs/remote-signer-metering.md).
+| Variable | Meaning |
+| --- | --- |
+| `CLEARINGHOUSE_AUTH_RESEND_API_URL` | Official Resend base URL or custom compatible URL |
+| `CLEARINGHOUSE_AUTH_RESEND_API_KEY` | API key sent by the official Resend SDK |
+| `CLEARINGHOUSE_AUTH_RESEND_FROM` | Verified sender identity |
+| `CLEARINGHOUSE_AUTH_GOOGLE_ENABLED` | Enables Google only with both client values |
+| `CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_ID` | Optional Google client ID |
+| `CLEARINGHOUSE_AUTH_GOOGLE_CLIENT_SECRET` | Optional Google client secret |
+| `CLEARINGHOUSE_AUTH_GITHUB_ENABLED` | Enables GitHub only with both client values |
+| `CLEARINGHOUSE_AUTH_GITHUB_CLIENT_ID` | Optional GitHub client ID |
+| `CLEARINGHOUSE_AUTH_GITHUB_CLIENT_SECRET` | Optional GitHub client secret |
 
-The included Redpanda node has replication factor one and development settings.
-Production needs an independently operated authenticated, authorized,
-replicated broker with monitoring and tested recovery while preserving a
-dedicated one-signer topic binding.
+Email OTP is always available. Google and GitHub do not appear in the UI unless explicitly enabled with complete configuration. There is no invitation code: a successful email/OAuth sign-in creates or resolves the user's personal account. Admin access is determined solely by `CLEARINGHOUSE_ADMIN_EMAIL` at sign-in.
 
-## Build and test
+### Discovery and static orchestrators
 
-The host development toolchain is Python 3.14.7 with UV 0.12.12 or newer, and
-Node 24 or newer with npm 12.0.2. Locked runtime and frontend dependencies live
-in `uv.lock` and `frontend/package-lock.json`.
+`CLEARINGHOUSE_DISCOVERY_URLS` names one or more comma-separated priced discovery endpoints. The Clearinghouse accepts only runner-and-price records from that boundary; it never bypasses signer filtering by querying orchestrators itself. A successful partial refresh replaces offers only for the orchestrators it reports and retains other orchestrators' last valid observations until their TTL. If the whole refresh is incomplete, the last safe snapshot remains usable for at most `CLEARINGHOUSE_DISCOVERY_TTL_SECONDS` (one hour by default). Any response containing retained observations is identified by `X-Clearinghouse-Discovery-Stale: true` and carries an HTTP `Warning: 110` header. With no safe snapshot, discovery returns `503`. Every generated Python SDK token pins the orchestrator service address from its selected offer.
+
+Collection APIs use opaque cursor pagination: 50 items by default, at most 200,
+with `next_cursor` continuation and no offset or embedded total count. The user
+and administrator overview endpoints use bounded SQL summaries. Offer cursors
+are tied to the discovery generation and return an explicit `409 stale_cursor`
+when the network snapshot changes. See the
+[pagination contract](contracts/http/v1/pagination.md) for endpoint behavior,
+stable ordering, and the Python gateway compatibility exception.
+
+For the bundled go-livepeer signer, keep `SIGNER_REMOTE_DISCOVERY=true`. To publish a fixed list, set both:
+
+```dotenv
+SIGNER_REMOTE_DISCOVERY=true
+SIGNER_ORCH_ADDR=https://orch-a.example:8935,https://orch-b.example:8935
+```
+
+`SIGNER_ORCH_ADDR` values are orchestrator service addresses, not Ethereum addresses. The pinned go-livepeer flag requires remote discovery to remain enabled when this list is supplied.
+
+### Signer and broker
+
+| Variable | Suggested evaluation value |
+| --- | --- |
+| `SIGNER_MODE` | `evaluation` |
+| `SIGNER_NETWORK` | `arbitrum-one-mainnet` |
+| `SIGNER_CHAIN_ID` | `42161` |
+| `SIGNER_CONTROLLER` | `0xD8E8328501E9645d16Cf49539efC04f734606ee4` |
+| `SIGNER_MIN_GAS_WEI` | `1000000000000000` (0.001 ETH) |
+| `SIGNER_MIN_DEPOSIT_WEI` | `1` |
+| `SIGNER_MIN_RESERVE_WEI` | `1` |
+| `LP_KAFKAUSER` / `LP_KAFKAPASSWORD` | blank for the private local broker |
+
+Set `ETH_RPC_URL`, `SIGNER_ETH_ADDR`, `SIGNER_KEYSTORE_HOST_FILE`, and `SIGNER_PASSWORD_HOST_FILE` to real operator-managed values. The key file must be encrypted Ethereum V3 JSON outside the repository, and the password file must not be world-accessible. The current pinned go-livepeer process may include the complete RPC URL in its logs; use a non-credential URL where possible and treat signer logs accordingly. Redacting `ethUrl` upstream remains optional follow-up work.
+
+## User workflow and Python SDK
+
+1. Sign in by email code.
+2. Open Network to inspect advertised offers and exact rates.
+3. Open Cost estimator, select an offer, and enter the assumptions requested for its billing unit.
+4. Review the estimated quantity, cost, and offer expiry, then create a workload using an optional client/job reference.
+5. Save the one-time Python SDK token.
+6. Pass it as the `LIVEPEER_GATEWAY_ACCESS_TOKEN` expected by [`livepeer-python-gateway`](https://github.com/livepeer/livepeer-python-gateway), or decode the documented payload to configure signer/discovery access directly.
+7. Inspect Usage & cost for measured quantity, quote-derived cost, and signer fee.
+
+The exact compatibility contract used by the local SDK checkout is documented in [contracts/sdk/livepeer-python-gateway-v1.md](contracts/sdk/livepeer-python-gateway-v1.md).
+
+### Ad-hoc Python gateway qualification
+
+Live orchestrator qualification is intentionally a developer operation rather
+than a CI gate: availability, capabilities, prices, chain state, and metering
+latency are external inputs. Copy `qualification.env.example` to the ignored
+`qualification.env`, restrict it to mode `0600`, and set an account API
+credential. Versioned case definitions live in
+[`config/qualification/cases.v1.json`](config/qualification/cases.v1.json). The
+suite defaults to an aggregate ceiling of `1000000000000` wei, a per-case
+ceiling of `100000000000` wei, a 30-second duration ceiling, and disabled live
+LV2V execution. Start with the read-only planner:
+
+```sh
+make qualify-billing-plan
+```
+
+The plan labels every case `runnable`, `unavailable`, `ambiguous`, or
+`over-budget` before creating a workload. Controlled cases exercise the real
+SQLite store, signer policy, event decoder, idempotency constraints, and cost
+aggregation without network spend:
+
+```sh
+make qualify-billing-controlled
+make qualify-billing-broker
+```
+
+Live execution requires both `QUAL_EXECUTE=true` and an explicit case list:
+
+```sh
+QUAL_EXECUTE=true make qualify-billing-run CASES=persistent-short
+QUAL_EXECUTE=true make qualify-billing-run CASES=persistent-short,persistent-multi-cycle
+make qualify-billing-report
+```
+
+The broker target replays qualification-owned duplicate and delayed events
+through the running Redpanda and core consumer; it signs no tickets and spends
+zero wei. The cases cover fixed-price success/paid failure/pre-payment rejection,
+single- and multi-cycle time metering, interrupted workloads, exact rational
+runtime repricing, duplicate/delayed/foreign signer events, and LV2V pixel
+accounting. Live fixed execution additionally requires
+`QUAL_FIXED_PAYLOAD_JSON`; live LV2V requires an authoritative priced offer,
+explicit media/model inputs, and `QUALIFICATION_ALLOW_LV2V=true`. Missing live
+inventory is reported as not runnable, never as a pass.
+
+Sanitized plans, per-case evidence, and `report-latest.md` are written beneath
+`tmp/qualification/`; credentials and workload tokens are never included.
+Executed workloads are revoked after evidence is collected. The operation
+fails closed on stale discovery unless `QUAL_ALLOW_STALE_DISCOVERY=true` is
+explicitly staged. Quote-derived cost is required to reconcile exactly with
+measured quantity. The signer-computed fee is reported separately because
+ticket and funding granularity can make it larger than the advertised
+usage-derived amount.
+
+See [the billing qualification runbook](docs/operations/billing-qualification.md)
+for the complete case matrix and evidence interpretation.
+
+### Authoritative LV2V prices
+
+Remote-signer runner discovery is authoritative for priced `runners[]`, but it
+does not provide the traditional GetOrchestrator `capabilities_prices` boundary
+needed to quote LV2V. Operators may create ignored
+`config/lv2v-offers.json` from
+[`config/lv2v-offers.example.json`](config/lv2v-offers.example.json), verify its
+exact on-network price and orchestrator address, and set:
+
+```dotenv
+CLEARINGHOUSE_LV2V_OFFERS_FILE=/app/config/lv2v-offers.json
+```
+
+The Compose service mounts `./config` read-only. An incomplete record, a unit
+other than `720p-pixel-seconds`, a non-wei currency, or an unavailable file
+invalidates the complete refresh and preserves the previous safe snapshot.
+
+## Storage and enterprise extension
+
+SQLite is the bundled durable authority and is appropriate for the documented single-node profile. The core uses portable entities and the `CoreStore`/`CoreTransaction` protocol. An enterprise PostgreSQL adapter is a separately packaged composition-root choice: it must pass the same storage conformance suite and preserve IDs, exact-price semantics, transactions, and uniqueness. No runtime annotation scanning or arbitrary module import is used.
+
+Extension points are versioned under `contracts/ports/v2`; public HTTP behavior is in `contracts/openapi.yaml`, and signer events are in `contracts/asyncapi.yaml`. Enterprise services should consume these boundaries rather than import SQLite internals.
+
+## Frontend conventions
+
+Both apps use Lit web components, Effect, TypeScript, Vite, and Vitest. Markup uses native semantic elements. No inline styles or utility-class framework is allowed. Shared global CSS owns the zinc/emerald visual language, themes, typography, and tokens. Shadow DOM components consume inherited custom properties and expose/forward stable Shadow Parts so global CSS retains deliberate control; component CSS is limited to encapsulated structure.
+
+See [docs/FRONTEND.md](docs/FRONTEND.md).
+
+## Build and quality
 
 ```sh
 uv sync --frozen
 cd frontend && npm ci --ignore-scripts && cd ..
+make test-backend
+make test-frontend
+make test-browser
 make build
-make test
 ```
 
-`make test` is the complete local gate. It validates Compose and shell entry
-points; formats, lints, and type-checks Python and TypeScript; checks repository
-architecture and generated OpenAPI/AsyncAPI/custom-element artifacts; runs
-unit, contract, real PostgreSQL/Redpanda, migration, Chromium journey,
-accessibility, desktop/mobile/dark visual regression, Firefox, and WebKit tests;
-and builds both web applications.
+`make test` runs the complete local gate. Coverage is enforced independently at a minimum of 85% for lines, statements, functions, and branches for the Python backend and each frontend codebase. Browser validation covers Chromium journeys and accessibility, responsive visual regression, and Firefox/WebKit smoke tests.
 
-Coverage is enforced independently—not as a blended repository number—at a
-minimum of 85% for lines, statements, functions, and branches for the backend,
-admin app, user app, and each shared frontend package. Focused Make targets are
-listed in [the quality policy](docs/QUALITY.md).
+Docker images are built through `make build`:
 
-## Release qualification
+- `livepeer/clearinghouse-core:local`
+- `livepeer/clearinghouse-edge:local`
+- `livepeer/clearinghouse-remote-signer:local`
 
-The disposable qualification targets build production images under unique
-Compose project names, use private generated secrets, write bounded sanitized
-evidence under ignored `tmp/qualification/`, and clean up only their labeled
-resources:
+## Operations and limitations
 
-```sh
-make qualification-harness
-make qualification-journey
-make qualification-recovery
-make qualification-evidence
-```
+- SQLite and Redpanda are single-node components. Back up the SQLite volume and operate a replicated Kafka deployment before claiming multi-node availability.
+- The core fails authorization closed on an invalid token, expired/revoked workload, price increase, orchestrator mismatch, state rebinding, or global stop.
+- Kafka events are idempotent by signer plus transport event ID. Unknown `auth_id` events remain visible as unmatched evidence.
+- Discovery prices are observations, not promises; workload creation freezes the selected observation.
+- This core measures and attributes costs. It does not collect payment, maintain balances, or settle invoices.
 
-The aggregate proves the OTP-to-charge journey, both production web images,
-tenant isolation, idempotency, kill-switch behavior, restart durability,
-poison quarantine, explicit retention-gap reconciliation, migration cycles,
-and an encrypted backup restored into an isolated PostgreSQL volume. It also
-records exact component, image, contract, schema, and tool identities.
+Deployment details are in [docs/operations/deployment.md](docs/operations/deployment.md), signer controls in [docs/operations/signer.md](docs/operations/signer.md), and security reporting in [SECURITY.md](SECURITY.md).
 
-Its 32-request sequential readiness probe is a small reference-fixture health
-gate, not a production capacity result. The reference stack is not highly
-available, the backup exercise is not point-in-time recovery, and automated
-qualification is not a funded signer transaction. Retain both the JSON and
-Markdown manifests described in the
-[qualification evidence runbook](docs/operations/qualification-evidence.md).
+## Project governance
 
-## Deployment, migrations, and recovery
-
-`compose.yaml` is a hardened, reproducible reference topology, not a complete
-production platform. Before serving traffic, an operator must provide TLS,
-external secret management, immutable image digests, highly available
-PostgreSQL and Kafka, backup/WAL infrastructure, production telemetry and
-alerts, deployment-specific capacity evidence, incident ownership, and a
-tested rollback procedure.
-
-Alembic migrations run before API startup. Inspect the live revision with
-`make migration-status`. Prefer a forward fix once new code may have written
-the target schema. A downgrade is accepted only after writers stop and the
-guarded target receives an exact prior revision, cataloged restore-verified
-backup ID, and external change-record ID:
-
-```sh
-make migration-downgrade CONFIRM=migration-downgrade \
-  REVISION=<prior_revision> VERIFIED_BACKUP_ID=<catalog_artifact_id> \
-  CHANGE_RECORD_ID=<external_change_record_id> \
-  OPERATIONS_OWNERSHIP_FILE=/absolute/path/operations-ownership.env
-```
-
-Encrypted logical backups and isolated restore verification are guarded too:
-
-```sh
-make backup CONFIRM=backup REASON='scheduled verification' \
-  IDEMPOTENCY_KEY=backup-YYYYMMDDTHHMMSSZ
-
-make restore-verify CONFIRM=isolated-restore BACKUP_NAME=<basename> \
-  REASON='scheduled restore verification' \
-  IDEMPOTENCY_KEY=restore-YYYYMMDDTHHMMSSZ
-```
-
-Never restore over the source database. Logical dumps do not meet the stated
-five-minute production recovery-point objective by themselves; production
-must add and exercise encrypted base backups and continuous WAL archiving.
-
-Start with the [operations handbook](docs/operations/index.md) for service
-levels, observability, reconciliation, retention, rotation, incident response,
-broker recovery, backup/restore, migration rollback, capacity, and kill-switch
-procedures.
-
-## Releases and compatibility
-
-The distribution follows Semantic Versioning, while HTTP, event, and adapter
-contracts keep their own explicit compatibility versions. A release is one
-coordinated set of six digest-addressed OCI images plus contracts, checksums,
-SBOMs, provenance, and signatures. Read the
-[release and compatibility policy](docs/RELEASING.md) before changing a public
-contract, migration, configuration boundary, or release version. User-visible
-changes are recorded in the [changelog](CHANGELOG.md).
-
-## Repository conventions
-
-- Beads (`bd`) is the only work tracker; do not add TODO/plan files or duplicate
-  project work into GitHub issues.
-- Parse untrusted data once at the boundary and keep domain dependencies
-  pointing inward.
-- Use exact integer/decimal financial representations and immutable audit facts.
-- Keep Pymthouse and commercial services in optional adapters, never core.
-- Use Lit and Effect for frontend workflows, semantic native HTML first, no
-  inline `style`, global tokens/layout, and intentional Shadow Parts.
-- Add tests with every behavior change and keep every independent coverage
-  metric at or above 85%.
-- Use Make targets as the supported local and CI command surface.
-
-See [AGENTS.md](AGENTS.md), the [documentation index](docs/index.md), and
-[work-tracking policy](docs/WORK_TRACKING.md) for the complete contributor map.
-
-## Current limitations
-
-- The Compose database and broker are single-node and not highly available.
-- Automated qualification does not fund or submit a real signer transaction.
-- A missing final signer Kafka event can require operator reconciliation while
-  its reserved value remains unavailable.
-- The initial signer admission policy rejects untyped `inPixels` requests
-  because the callback cannot reconstruct them safely.
-- The reference runtime wires built-in adapters; arbitrary runtime code loading
-  is intentionally unavailable.
-- The reference logical-backup flow does not provide continuous WAL archiving
-  or a production RPO/RTO guarantee.
-- The optional `/v1/jobs` gateway, commercial billing/custody providers, and a
-  go-livepeer enhancement are future work, not scaffold requirements.
-
-## License
-
-Open Clearinghouse is available under the MIT License. Copyright Livepeer.
+Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and [GOVERNANCE.md](GOVERNANCE.md). Work is tracked in Beads. The project is licensed under the [MIT License](LICENSE), copyright Livepeer.

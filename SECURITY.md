@@ -34,8 +34,11 @@ The reference deployment's trust boundaries, custody rules, authentication
 model, and operational assumptions are documented in the
 [security model](docs/SECURITY.md) and [threat
 model](docs/security/threat-model.md). Vulnerabilities in upstream go-livepeer,
-PostgreSQL, Redpanda, browsers, or identity providers should also be reported to
-the responsible upstream project.
+SQLite, Redpanda, browsers, or identity providers should also be reported to the
+responsible upstream project. Separately packaged storage or enterprise
+extensions are supported by their operators and upstream maintainers, not by
+the reference core's security process unless the fault also exists in a public
+Clearinghouse contract or implementation.
 
 This policy does not authorize access to data or systems you do not own,
 service disruption, social engineering, physical testing, or retention of

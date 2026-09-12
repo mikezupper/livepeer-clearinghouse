@@ -13,23 +13,27 @@
   }
 
   handle /health/* {
-    reverse_proxy api:8000
+    reverse_proxy core:8000
   }
   handle /v1/* {
-    reverse_proxy api:8000
+    reverse_proxy core:8000
   }
   @signerProtocol path /generate-live-payment /sign-orchestrator-info /discover-orchestrators
   handle @signerProtocol {
     reverse_proxy remote-signer:8935
   }
-  redir /admin /admin/ 308
-  handle_path /admin/* {
-    reverse_proxy admin-web:8080
-  }
   handle_path /signer/* {
     reverse_proxy remote-signer:8935
   }
+  redir /admin /admin/ 308
+  handle_path /admin/* {
+    root * /srv/admin
+    try_files {path} /index.html
+    file_server
+  }
   handle {
-    reverse_proxy user-web:8080
+    root * /srv/user
+    try_files {path} /index.html
+    file_server
   }
 }

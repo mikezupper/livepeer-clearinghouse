@@ -30,7 +30,6 @@ REQUIRED_FILES = (
     "docs/QUALITY.md",
     "docs/SECURITY.md",
     "docs/security/threat-model.md",
-    "docs/security/data-lifecycle.md",
     "docs/RELIABILITY.md",
     "docs/RELEASING.md",
     "docs/WORK_TRACKING.md",

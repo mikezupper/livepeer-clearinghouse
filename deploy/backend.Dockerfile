@@ -10,28 +10,17 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md .python-version ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY backend ./backend
+COPY contracts ./contracts
 RUN uv sync --frozen --no-dev --no-editable
-
-FROM build AS test
-ENV PATH=/app/.venv/bin:$PATH
-RUN uv sync --frozen --no-editable
-COPY --chmod=0555 deploy/backend-test-entrypoint.sh /app/deploy/backend-test-entrypoint.sh
 
 FROM ${PYTHON_IMAGE} AS runtime
 ENV PATH=/app/.venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 RUN groupadd --gid 10001 clearinghouse \
-    && useradd --uid 10001 --gid 10001 --no-create-home --home-dir /nonexistent clearinghouse
+    && useradd --uid 10001 --gid 10001 --no-create-home --home-dir /nonexistent clearinghouse \
+    && mkdir -p /data \
+    && chown 10001:10001 /data
 COPY --from=build --chown=10001:10001 /app/.venv /app/.venv
-COPY --chown=10001:10001 backend/alembic.ini ./backend/alembic.ini
-COPY --chown=10001:10001 backend/migrations ./backend/migrations
-COPY --chmod=0555 --chown=0:0 deploy/backend-entrypoint.sh deploy/database_url.py ./deploy/
-COPY --chmod=0555 --chown=0:0 deploy/ops/control.sh ./deploy/ops/control.sh
-COPY --chmod=0555 --chown=0:0 deploy/signer/diagnostic-entrypoint.sh ./deploy/signer/diagnostic-entrypoint.sh
-COPY --chown=10001:10001 deploy/bootstrap_operator.py deploy/consumer_health.py deploy/smoke.py deploy/topic_policy.py ./deploy/
-COPY --chown=10001:10001 deploy/qualification ./deploy/qualification
-COPY --chown=10001:10001 deploy/signer/preflight.py ./deploy/signer/preflight.py
-USER 0:0
+USER 10001:10001
 EXPOSE 8000
-ENTRYPOINT ["/app/deploy/backend-entrypoint.sh"]
-CMD ["uvicorn", "clearinghouse.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--proxy-headers", "--forwarded-allow-ips=*"]
+CMD ["clearinghouse"]

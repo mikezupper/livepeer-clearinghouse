@@ -346,6 +346,25 @@
     color: var(--och-color-text-muted);
   }
 
+  :where(admin-app, user-app)::part(denomination-field) {
+    color: var(--och-color-text-muted);
+    font-size: var(--och-font-size-small);
+    font-weight: 650;
+  }
+
+  :where(admin-app, user-app)::part(denomination-select) {
+    padding-inline: var(--och-space-2);
+    color: var(--och-color-text);
+    background: var(--och-color-surface-raised);
+    border: var(--och-border-width) solid var(--och-color-border-strong);
+    border-radius: var(--och-radius-small);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :where(admin-app, user-app)::part(denomination-select):hover {
+    border-color: var(--och-color-brand);
+  }
+
   :where(och-app-shell, admin-app, user-app)::part(title) {
     color: var(--och-color-text-strong);
     font-size: var(--och-font-size-2);
@@ -422,6 +441,19 @@
   :where(och-app-shell, admin-app, user-app)::part(mobile-brand) {
     display: inline-flex;
   }
+
+  :where(admin-app, user-app)::part(context) {
+    display: none;
+  }
+
+  :where(admin-app, user-app)::part(denomination-label) {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 @media (prefers-contrast: more) {
@@ -484,5 +516,27 @@
   :where(och-app-shell, admin-app, user-app)::part(navigation-backdrop) {
     background: Canvas;
     opacity: 0.75;
+  }
+}
+
+@layer components {
+  :where(admin-app, user-app)::part(pagination) {
+    justify-content: space-between;
+    margin-block-start: var(--och-space-3);
+    padding-block-start: var(--och-space-2);
+    border-block-start: var(--och-border-width) solid var(--och-color-border);
+  }
+
+  :where(admin-app, user-app)::part(pagination-status) {
+    color: var(--och-color-text-muted);
+  }
+
+  :where(admin-app, user-app)::part(pagination-button) {
+    min-block-size: var(--och-control-min-block-size);
+    padding: var(--och-space-1) var(--och-space-2);
+    color: var(--och-color-text);
+    background: var(--och-color-surface-raised);
+    border: var(--och-border-width) solid var(--och-color-border-strong);
+    border-radius: var(--och-radius-small);
   }
 }
