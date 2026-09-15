@@ -19,6 +19,7 @@ const workload = {
   id: ids.workload, account_id: ids.account, capability: offer.capability, model: offer.model,
   offer_id: ids.offer, quoted_price: price, status: "active", client_reference: "sdk-job-1",
   runner_session_id: null, manifest_id: "manifest-1", payment_session_id: "pm-1",
+  max_spend_wei: "100",
   created_at: at, expires_at: at
 }
 const usage = {
@@ -28,7 +29,8 @@ const usage = {
 }
 const cost = {
   workload, measured_quantity: "10", measured_unit: "pixel", quoted_fee: "20",
-  computed_fee: "20", currency: "wei", event_count: 1
+  computed_fee: "20", currency: "wei", event_count: 1, spend_ceiling: "100",
+  authorized_fee: "30", pending_fee: "10", remaining_spend: "70"
 }
 
 const reply = (route: Route, body: unknown, status = 200) => route.fulfill({
@@ -69,10 +71,10 @@ export const installMockApi = async (
     }
     if (pathname.startsWith("/v1/workloads/") && request.method() === "DELETE") return reply(route, undefined, 204)
     if (pathname === "/v1/credentials" && request.method() === "GET") {
-      return reply(route, { items: [{ id: ids.credential, name: "Python SDK", created_at: at, revoked_at: null }], next_cursor: null })
+      return reply(route, { items: [{ id: ids.credential, name: "Gateway automation", created_at: at, revoked_at: null }], next_cursor: null })
     }
     if (pathname === "/v1/credentials" && request.method() === "POST") {
-      return reply(route, { id: ids.credential, name: "Python SDK", token: "och_live_secret", created_at: at }, 201)
+      return reply(route, { id: ids.credential, name: "Gateway automation", token: "och_live_secret", created_at: at }, 201)
     }
     if (pathname.startsWith("/v1/credentials/") && request.method() === "DELETE") return reply(route, undefined, 204)
     if (pathname === "/v1/usage") return reply(route, { items: [usage], next_cursor: null })

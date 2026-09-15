@@ -51,6 +51,7 @@ class Settings:
     action: str = "reserve"
     request_payload: dict[str, object] | None = None
     minimum_events: int = 1
+    max_spend_wei: int = 100_000_000_000
 
     @classmethod
     def from_values(cls, values: dict[str, str]) -> Settings:
@@ -96,6 +97,7 @@ class Settings:
             action=values.get("QUAL_ACTION", "reserve").strip() or "reserve",
             request_payload=_json_object(values, "QUAL_REQUEST_PAYLOAD_JSON"),
             minimum_events=_positive_int(values, "QUAL_MINIMUM_EVENTS", 1),
+            max_spend_wei=_positive_int(values, "QUAL_MAX_AUTHORIZED_WEI", 100_000_000_000),
         )
 
 
@@ -372,7 +374,11 @@ def wait_for_interruption_stability(
     return stable
 
 
-def validate_accounting(event: dict[str, Any] | list[dict[str, Any]], cost: dict[str, Any]) -> None:
+def validate_accounting(
+    event: dict[str, Any] | list[dict[str, Any]],
+    cost: dict[str, Any],
+    expected_ceiling: int | None = None,
+) -> None:
     """Reject superficially attributed events whose quantities do not reconcile."""
 
     events = event if isinstance(event, list) else [event]
@@ -429,6 +435,22 @@ def validate_accounting(event: dict[str, Any] | list[dict[str, Any]], cost: dict
         expected_quote = (measured_quantity * numerator + denominator - 1) // denominator
         if quoted_fee != expected_quote:
             raise QualificationError("quote-derived cost does not reconcile exactly")
+    if expected_ceiling is not None:
+        try:
+            ceiling = int(str(cost["spend_ceiling"]))
+            authorized = int(str(cost["authorized_fee"]))
+            pending = int(str(cost["pending_fee"]))
+            remaining = int(str(cost["remaining_spend"]))
+        except (KeyError, TypeError, ValueError) as error:
+            raise QualificationError("cost response omitted enforced spend values") from error
+        if ceiling != expected_ceiling:
+            raise QualificationError(
+                "cost response spend ceiling differs from the requested ceiling"
+            )
+        if pending != max(authorized - aggregate_fee, 0):
+            raise QualificationError("pending signer exposure does not reconcile")
+        if remaining != max(ceiling - aggregate_fee - pending, 0):
+            raise QualificationError("remaining spend does not reconcile")
 
 
 def safe_offer(offer: dict[str, Any]) -> dict[str, object]:
@@ -500,6 +522,7 @@ def qualify(settings: Settings) -> tuple[dict[str, object], Path]:
         "health": health,
         "discovery_stale": stale,
         "selected_offer": safe_offer(offer),
+        "maximum_authorized_wei": str(settings.max_spend_wei),
     }
     if not settings.execute:
         path = write_evidence(settings, evidence)
@@ -515,6 +538,7 @@ def qualify(settings: Settings) -> tuple[dict[str, object], Path]:
             "client_reference": (
                 f"gateway-qualification-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}"
             ),
+            "max_spend_wei": str(settings.max_spend_wei),
         },
     )
     if not isinstance(created, dict):
@@ -540,7 +564,7 @@ def qualify(settings: Settings) -> tuple[dict[str, object], Path]:
                 ),
             }
         )
-        validate_accounting(events, cost)
+        validate_accounting(events, cost, settings.max_spend_wei)
     except QualificationError as error:
         evidence.update(
             {

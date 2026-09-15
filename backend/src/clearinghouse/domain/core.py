@@ -14,6 +14,7 @@ WorkloadId = NewType("WorkloadId", str)
 PriceObservationId = NewType("PriceObservationId", str)
 AuthorizationId = NewType("AuthorizationId", str)
 UsageEventId = NewType("UsageEventId", str)
+MAX_SIGNED_AMOUNT = (1 << 63) - 1
 
 
 class LifecycleStatus(StrEnum):
@@ -78,6 +79,11 @@ class Workload:
     manifest_id: str | None = None
     payment_session_id: str | None = None
     client_reference: str | None = None
+    max_spend_wei: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.max_spend_wei is not None and not 0 < self.max_spend_wei <= MAX_SIGNED_AMOUNT:
+            raise ValueError("maximum workload spend must be a positive signed 64-bit integer")
 
     def effective_status(self, at: datetime) -> WorkloadStatus:
         """Return the access state at ``at`` without rewriting immutable history."""
@@ -97,6 +103,14 @@ class PaymentAuthorization:
     orchestrator_address: str
     advertised_price: ExactPrice
     authorized_at: datetime
+    signer_last_update_ns: int | None = None
+    authorized_fee: int = 0
+
+    def __post_init__(self) -> None:
+        if self.signer_last_update_ns is not None and self.signer_last_update_ns < 0:
+            raise ValueError("signer timestamp must be non-negative")
+        if self.authorized_fee < 0:
+            raise ValueError("authorized fee must be non-negative")
 
 
 @dataclass(frozen=True, slots=True)

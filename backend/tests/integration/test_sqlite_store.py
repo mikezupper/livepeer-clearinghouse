@@ -1,6 +1,7 @@
 """Storage conformance exercised against the bundled SQLite adapter."""
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import aiosqlite
 import pytest
@@ -163,3 +164,56 @@ async def test_transactions_rollback_and_sqlite_safety_pragmas(store: SqliteStor
     assert await store.readiness()
     await store.close()
     assert not await store.readiness()
+
+
+async def test_initialize_adds_spend_columns_to_existing_database(tmp_path: Path) -> None:
+    path = tmp_path / "pre-spend-ceiling.db"
+    async with aiosqlite.connect(path) as connection:
+        await connection.executescript(
+            """
+            CREATE TABLE price_observations (
+              id TEXT PRIMARY KEY, orchestrator_url TEXT NOT NULL,
+              orchestrator_address TEXT, capability TEXT NOT NULL, model TEXT,
+              constraints_json TEXT NOT NULL, numerator INTEGER NOT NULL,
+              denominator INTEGER NOT NULL, currency TEXT NOT NULL,
+              quantity_unit TEXT NOT NULL, observed_at TEXT NOT NULL,
+              expires_at TEXT NOT NULL, is_current INTEGER NOT NULL DEFAULT 1
+            );
+            CREATE TABLE workloads (
+              id TEXT PRIMARY KEY, account_id TEXT NOT NULL, user_id TEXT NOT NULL,
+              capability TEXT NOT NULL, model TEXT, offer_id TEXT NOT NULL,
+              price_numerator INTEGER NOT NULL, price_denominator INTEGER NOT NULL,
+              price_currency TEXT NOT NULL, price_quantity_unit TEXT NOT NULL,
+              status TEXT NOT NULL, token_digest BLOB NOT NULL UNIQUE,
+              expires_at TEXT NOT NULL, created_at TEXT NOT NULL,
+              runner_session_id TEXT, manifest_id TEXT, payment_session_id TEXT,
+              client_reference TEXT
+            );
+            CREATE TABLE authorizations (
+              id TEXT PRIMARY KEY, workload_id TEXT NOT NULL, signer_id TEXT NOT NULL,
+              state_id TEXT NOT NULL, sequence_number INTEGER NOT NULL,
+              orchestrator_address TEXT NOT NULL, price_numerator INTEGER NOT NULL,
+              price_denominator INTEGER NOT NULL, price_currency TEXT NOT NULL,
+              price_quantity_unit TEXT NOT NULL, authorized_at TEXT NOT NULL,
+              UNIQUE(signer_id, state_id, sequence_number)
+            );
+            """
+        )
+        await connection.commit()
+
+    migrated = SqliteStore(path)
+    await migrated.initialize()
+    async with aiosqlite.connect(path) as connection:
+        workload_columns = {
+            row[1]
+            for row in await (await connection.execute("PRAGMA table_info(workloads)")).fetchall()
+        }
+        authorization_columns = {
+            row[1]
+            for row in await (
+                await connection.execute("PRAGMA table_info(authorizations)")
+            ).fetchall()
+        }
+    assert "max_spend_wei" in workload_columns
+    assert {"signer_last_update_ns", "authorized_fee"} <= authorization_columns
+    await migrated.close()

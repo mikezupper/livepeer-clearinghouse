@@ -67,7 +67,7 @@ export class UserApi extends Context.Tag("clearinghouse/UserApi")<UserApi, {
   readonly createCredential: (name: string) => Effect.Effect<typeof IssuedCredential.Type, UserFailure>
   readonly revokeCredential: (id: string) => Effect.Effect<void, UserFailure>
   readonly workloads: (cursor?: string | null) => Effect.Effect<typeof Workloads.Type, UserFailure>
-  readonly createWorkload: (offerId: string, reference: string) => Effect.Effect<typeof IssuedWorkload.Type, UserFailure>
+  readonly createWorkload: (offerId: string, reference: string, maxSpendWei?: string) => Effect.Effect<typeof IssuedWorkload.Type, UserFailure>
   readonly revokeWorkload: (id: string) => Effect.Effect<void, UserFailure>
   readonly usage: (cursor?: string | null) => Effect.Effect<typeof UsageItems.Type, UserFailure>
   readonly costs: (cursor?: string | null) => Effect.Effect<typeof Costs.Type, UserFailure>
@@ -75,21 +75,21 @@ export class UserApi extends Context.Tag("clearinghouse/UserApi")<UserApi, {
 }>() {}
 
 export const UserApiLive = Layer.succeed(UserApi, {
-  providers: () => decode("providers", Providers, "/v1/auth/providers"),
-  session: () => decode("session", Session, "/v1/auth/session"),
-  requestCode: (email) => empty("request code", "/v1/auth/email/code", mutation("POST", { email })),
-  verifyCode: (email, code) => decode("verify code", Session, "/v1/auth/email/verify", mutation("POST", { email, code })),
-  logout: () => empty("logout", "/v1/auth/session", mutation("DELETE")),
-  offers: (cursor, capability, model) => decode("offers", Offers, collectionPath("/v1/offers", cursor, { capability: capability ?? null, model: model ?? null })),
-  credentials: (cursor) => decode("credentials", Credentials, collectionPath("/v1/credentials", cursor)),
-  createCredential: (name) => decode("create credential", IssuedCredential, "/v1/credentials", mutation("POST", { name })),
-  revokeCredential: (id) => empty("revoke credential", `/v1/credentials/${encodeURIComponent(id)}`, mutation("DELETE")),
-  workloads: (cursor) => decode("workloads", Workloads, collectionPath("/v1/workloads", cursor)),
-  createWorkload: (offer_id, client_reference) => decode("create workload", IssuedWorkload, "/v1/workloads", mutation("POST", { offer_id, client_reference })),
-  revokeWorkload: (id) => empty("revoke workload", `/v1/workloads/${encodeURIComponent(id)}`, mutation("DELETE")),
-  usage: (cursor) => decode("usage", UsageItems, collectionPath("/v1/usage", cursor)),
-  costs: (cursor) => decode("costs", Costs, collectionPath("/v1/costs", cursor)),
-  summary: () => decode("summary", Summary, "/v1/summary")
+  providers: () => decode("load sign-in options", Providers, "/v1/auth/providers"),
+  session: () => decode("check your session", Session, "/v1/auth/session"),
+  requestCode: (email) => empty("send a one-time code", "/v1/auth/email/code", mutation("POST", { email })),
+  verifyCode: (email, code) => decode("verify your sign-in code", Session, "/v1/auth/email/verify", mutation("POST", { email, code })),
+  logout: () => empty("sign out", "/v1/auth/session", mutation("DELETE")),
+  offers: (cursor, capability, model) => decode("load network offers", Offers, collectionPath("/v1/offers", cursor, { capability: capability ?? null, model: model ?? null })),
+  credentials: (cursor) => decode("load account API credentials", Credentials, collectionPath("/v1/credentials", cursor)),
+  createCredential: (name) => decode("create an account API credential", IssuedCredential, "/v1/credentials", mutation("POST", { name })),
+  revokeCredential: (id) => empty("revoke the account API credential", `/v1/credentials/${encodeURIComponent(id)}`, mutation("DELETE")),
+  workloads: (cursor) => decode("load workloads", Workloads, collectionPath("/v1/workloads", cursor)),
+  createWorkload: (offer_id, client_reference, max_spend_wei) => decode("create workload access", IssuedWorkload, "/v1/workloads", mutation("POST", { offer_id, client_reference, ...(max_spend_wei === undefined ? {} : { max_spend_wei }) })),
+  revokeWorkload: (id) => empty("revoke workload access", `/v1/workloads/${encodeURIComponent(id)}`, mutation("DELETE")),
+  usage: (cursor) => decode("load usage events", UsageItems, collectionPath("/v1/usage", cursor)),
+  costs: (cursor) => decode("load usage and cost", Costs, collectionPath("/v1/costs", cursor)),
+  summary: () => decode("load your account summary", Summary, "/v1/summary")
 })
 const runtime = ManagedRuntime.make(UserApiLive)
 export const runUser = <A>(effect: Effect.Effect<A, UserFailure, UserApi>): Promise<A> => runtime.runPromise(effect)

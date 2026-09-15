@@ -6,7 +6,7 @@
 
 | Application | Routes |
 | --- | --- |
-| User | Overview, Network, Cost estimator, Workloads, API credentials, Usage & cost, Profile |
+| User | Overview, Network, Cost estimator, Workloads, Account API credentials, Usage & cost, Profile |
 | Admin | Overview, Users & accounts, Workloads, Usage, Operations |
 
 Unknown paths return to Overview. Native links plus the History API preserve browser navigation. The shared `och-app-shell` provides one main landmark, responsive navigation, skip link, focus management, and a footer.
@@ -30,10 +30,30 @@ CSS selectors cannot cross Shadow DOM. Custom properties inherit through it. Ele
 
 The visual language reinterprets the useful Pymthouse console concepts: compact data density, zinc surfaces, emerald primary state, restrained borders, task-oriented sidebar navigation, responsive mobile drawer, and dark-first presentation. It does not copy Pymthouse code or enterprise workflows.
 
-The Cost estimator consumes current offers rather than maintaining a second price catalog. Its semantic form adapts to `fixed`, `seconds`, `pixel`, and `720p-pixel-seconds` units and uses exact integer/rational arithmetic with ceiling division. The estimate records user assumptions only; creating access snapshots the selected offer, while Usage & cost remains authoritative for signer-measured results.
+The Cost estimator consumes current offers rather than maintaining a second price catalog. Its semantic form adapts to `fixed`, `seconds`, `pixel`, and `720p-pixel-seconds` units and uses exact integer/rational arithmetic with ceiling division. The estimate records user assumptions only. A separately labelled optional maximum-spend input becomes an immutable enforced workload ceiling; it is never inferred from the estimate. Usage & cost distinguishes signer-reported fee, authorized-but-unreconciled pending exposure, ceiling, and remaining spend.
 
-The shared header denomination control defaults to Wei and can present Wei-denominated values as ETH across both applications. The preference is stored under one same-origin browser key and synchronized between open tabs. Conversion is presentation-only: APIs, persisted values, quote snapshots, and signer inputs remain exact Wei integers or rationals. ETH rendering uses `1 ETH = 10^18 wei`, never floating-point arithmetic; repeating rates are marked approximate and retain their exact Wei rational alongside the display value. Prices in other currencies are not converted.
+The shared header denomination control defaults to Wei and can present Wei-denominated values as ETH across both applications. The preference is stored under one same-origin browser key and synchronized between open tabs. Display conversion is presentation-only; the spend-ceiling form accepts the selected denomination and converts it exactly to a Wei integer at the boundary. APIs, persisted values, quote snapshots, and signer inputs remain exact Wei integers or rationals. ETH rendering and parsing use `1 ETH = 10^18 wei`, never floating-point arithmetic; repeating rates are marked approximate and retain their exact Wei rational alongside the display value. Prices in other currencies are not converted.
+
+## Content contract
+
+[Product content design](product-specs/content-design.md) defines the shared
+hierarchy, vocabulary, help layers, and state-writing rules. Route metadata is
+the source of truth for navigation labels and shell summaries; component
+templates own the copy that is specific to their controls and data regions.
+Documentation describes patterns and canonical terms, not a second copy of
+every interface string.
+
+Keep task context and consequences visible. Put supplemental explanations in a
+native `details` disclosure. A contextual-help tooltip may define a short term,
+but it must be keyboard reachable, dismissible, and available to assistive
+technology; it must not be the only source of instructions. Associate field
+hints and validation errors with their controls using `aria-describedby` and
+stable IDs. Preserve the visible `label` as the control's accessible name.
+
+Loading and successful updates use polite status announcements. Failures that
+require attention use alerts and retain a recovery action. Do not announce
+static introductory prose or move focus merely because data refreshed.
 
 ## Validation
 
-Run `make quality-frontend`, `make test-frontend`, and `make test-browser`. Each app and shared package independently enforces all four 85% coverage metrics. Real-browser tests exercise Shadow DOM pagination and large fixtures verify that a page never creates more than the configured item count in the DOM. Visual baselines cover desktop dark, desktop light, mobile content, and mobile navigation.
+Run `make quality-frontend`, `make test-frontend`, and `make test-browser`. Each app and shared package independently enforces all four 85% coverage metrics. Component content and accessible-name assertions live beside the applications in `frontend/apps/*/src/*.test.ts` and beside shared components in `frontend/packages/ui/src/*.test.ts`. Browser journeys and Axe checks live in `frontend/e2e/clearinghouse.journey.spec.ts` and `frontend/e2e/clearinghouse.accessibility.spec.ts`. Real-browser tests exercise Shadow DOM pagination and large fixtures verify that a page never creates more than the configured item count in the DOM. Visual baselines cover desktop dark, desktop light, mobile content, and mobile navigation.

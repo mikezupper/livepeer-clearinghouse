@@ -8,7 +8,7 @@ CI gate.
 ## Safety model
 
 Copy `qualification.env.example` to the ignored `qualification.env`, set mode
-`0600`, and configure the API credential. The checked-in defaults permit at
+`0600`, and configure the account API credential. The checked-in defaults permit at
 most `1000000000000` wei across the selected runnable cases,
 `100000000000` wei per case, and 30 seconds per case. A case also has its own
 price ratio, quantity, orchestrator allowlist, duration, and maximum authorized
@@ -29,6 +29,7 @@ are intentionally outside the qualification fee total.
 | `runtime-price-policy` | Controlled | Equal/lower exact prices pass and any higher rational price fails before usage. |
 | `signer-event-replay` | Controlled | Exact duplicates are idempotent, delayed valid events match, and foreign events remain unmatched. |
 | `lv2v-pixel-accounting` | Controlled | Pixels reconcile against the immutable pixel-second quote and the wrong unit is rejected. |
+| `workload-spend-ceiling` | Controlled | Exact retries are idempotent, pending exposure reconciles with signer usage, and the next request is rejected before exceeding the immutable ceiling. |
 | `lv2v-live` | Live network | Runs only with authoritative inventory, an explicit model/media fixture, pixel ceiling, and opt-in. |
 
 Controlled scenarios use temporary SQLite databases and the production domain,
@@ -72,7 +73,7 @@ default):
 - `gateway-<case>-<timestamp>.json` records sanitized live offer, session, usage, cost, and cleanup evidence.
 - `report-latest.md` summarizes the latest result per case and aggregate observed fees.
 
-Tokens, API credentials, and payment headers are never recorded. Workloads are
+Workload SDK tokens, account API credentials, and payment headers are never recorded. Workloads are
 revoked after live evidence is collected. A live result passes only when usage
 is matched, event sequences are unique and monotonic, quote-derived cost exactly
 matches the measured quantity, and the cost aggregate includes every observed

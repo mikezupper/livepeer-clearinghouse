@@ -156,7 +156,11 @@ def qualify(settings: Settings, compose_env: Path, topic: str, signer_secret: st
         settings,
         "/v1/workloads",
         method="POST",
-        payload={"offer_id": str(offer["id"]), "client_reference": "broker-qualification"},
+        payload={
+            "offer_id": str(offer["id"]),
+            "client_reference": "broker-qualification",
+            "max_spend_wei": str(settings.max_spend_wei),
+        },
     )
     if not isinstance(created, dict):
         raise QualificationError("workload response must be an object")
@@ -183,6 +187,7 @@ def qualify(settings: Settings, compose_env: Path, topic: str, signer_secret: st
                 "SequenceNumber": 0,
                 "App": settings.capability,
                 "Type": "live",
+                "LastUpdate": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             },
         },
     )
@@ -205,7 +210,7 @@ def qualify(settings: Settings, compose_env: Path, topic: str, signer_secret: st
         "case_id": "signer-event-replay",
         "source": "controlled-broker",
         "status": "failed",
-        "maximum_authorized_wei": "0",
+        "maximum_authorized_wei": str(settings.max_spend_wei),
         "actual_authorized_wei": "0",
         "selected_offer": safe_offer(offer),
         "workload_id": workload_id,

@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import sqlite3
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -126,7 +127,8 @@ CREATE TABLE IF NOT EXISTS workloads (
   runner_session_id TEXT,
   manifest_id TEXT,
   payment_session_id TEXT,
-  client_reference TEXT
+  client_reference TEXT,
+  max_spend_wei INTEGER CHECK (max_spend_wei > 0)
 );
 CREATE TABLE IF NOT EXISTS authorizations (
   id TEXT PRIMARY KEY,
@@ -140,6 +142,8 @@ CREATE TABLE IF NOT EXISTS authorizations (
   price_currency TEXT NOT NULL,
   price_quantity_unit TEXT NOT NULL,
   authorized_at TEXT NOT NULL,
+  signer_last_update_ns INTEGER CHECK (signer_last_update_ns >= 0),
+  authorized_fee INTEGER NOT NULL DEFAULT 0 CHECK (authorized_fee >= 0),
   UNIQUE(signer_id, state_id, sequence_number)
 );
 CREATE TABLE IF NOT EXISTS usage_events (
@@ -163,6 +167,8 @@ CREATE TABLE IF NOT EXISTS usage_events (
   occurred_at TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('matched', 'unmatched'))
 );
+CREATE UNIQUE INDEX IF NOT EXISTS ux_authorizations_signer_state
+  ON authorizations(signer_id, state_id);
 CREATE TABLE IF NOT EXISTS system_state (
   singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
   stop_enabled INTEGER NOT NULL CHECK (stop_enabled IN (0, 1)),
@@ -557,8 +563,12 @@ class SqliteTransaction(CoreTransaction):
 
     async def put_workload(self, workload: Workload, token_digest: bytes) -> None:
         await self.connection.execute(
-            """INSERT INTO workloads VALUES
-               (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO workloads
+               (id, account_id, user_id, capability, model, offer_id,
+                price_numerator, price_denominator, price_currency, price_quantity_unit,
+                status, token_digest, expires_at, created_at, runner_session_id,
+                manifest_id, payment_session_id, client_reference, max_spend_wei)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 workload.id,
                 workload.account_id,
@@ -578,6 +588,7 @@ class SqliteTransaction(CoreTransaction):
                 workload.manifest_id,
                 workload.payment_session_id,
                 workload.client_reference,
+                workload.max_spend_wei,
             ),
         )
 
@@ -642,6 +653,17 @@ class SqliteTransaction(CoreTransaction):
             for row in rows
         )
 
+    async def authorization_fees(self, workload_ids: Sequence[WorkloadId]) -> dict[WorkloadId, int]:
+        if not workload_ids:
+            return {}
+        placeholders = ",".join("?" for _ in workload_ids)
+        rows = await self._all(
+            f"""SELECT workload_id, authorized_fee FROM authorizations
+                WHERE workload_id IN ({placeholders})""",
+            tuple(workload_ids),
+        )
+        return {WorkloadId(row["workload_id"]): row["authorized_fee"] for row in rows}
+
     @staticmethod
     def _workload(row: aiosqlite.Row) -> Workload:
         return Workload(
@@ -664,6 +686,7 @@ class SqliteTransaction(CoreTransaction):
             row["manifest_id"],
             row["payment_session_id"],
             row["client_reference"],
+            row["max_spend_wei"],
         )
 
     async def revoke_workload(self, workload_id: WorkloadId, *, at: datetime) -> bool:
@@ -691,23 +714,42 @@ class SqliteTransaction(CoreTransaction):
 
     async def put_authorization(self, authorization: PaymentAuthorization) -> bool:
         price = authorization.advertised_price
-        cursor = await self.connection.execute(
-            """INSERT OR IGNORE INTO authorizations VALUES
-               (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                authorization.id,
-                authorization.workload_id,
-                authorization.signer_id,
-                authorization.state_id,
-                authorization.sequence_number,
-                authorization.orchestrator_address,
-                price.numerator,
-                price.denominator,
-                price.currency,
-                price.quantity_unit,
-                _at(authorization.authorized_at),
-            ),
-        )
+        try:
+            cursor = await self.connection.execute(
+                """INSERT INTO authorizations
+               (id, workload_id, signer_id, state_id, sequence_number,
+                orchestrator_address, price_numerator, price_denominator,
+                price_currency, price_quantity_unit, authorized_at,
+                signer_last_update_ns, authorized_fee)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+                 sequence_number = excluded.sequence_number,
+                 authorized_at = excluded.authorized_at,
+                 signer_last_update_ns = excluded.signer_last_update_ns,
+                 authorized_fee = excluded.authorized_fee
+               WHERE authorizations.workload_id = excluded.workload_id
+                 AND authorizations.signer_id = excluded.signer_id
+                 AND authorizations.state_id = excluded.state_id
+                 AND authorizations.orchestrator_address = excluded.orchestrator_address
+                 AND authorizations.sequence_number + 1 = excluded.sequence_number""",
+                (
+                    authorization.id,
+                    authorization.workload_id,
+                    authorization.signer_id,
+                    authorization.state_id,
+                    authorization.sequence_number,
+                    authorization.orchestrator_address,
+                    price.numerator,
+                    price.denominator,
+                    price.currency,
+                    price.quantity_unit,
+                    _at(authorization.authorized_at),
+                    authorization.signer_last_update_ns,
+                    authorization.authorized_fee,
+                ),
+            )
+        except sqlite3.IntegrityError:
+            return False
         return cursor.rowcount == 1
 
     async def get_authorization(
@@ -730,6 +772,8 @@ class SqliteTransaction(CoreTransaction):
                 row["price_quantity_unit"],
             ),
             _time(row["authorized_at"]),
+            row["signer_last_update_ns"],
+            row["authorized_fee"],
         )
 
     async def put_usage(self, usage: UsageEvent) -> bool:
@@ -896,6 +940,34 @@ class SqliteStore:
                            CHECK (is_current IN (0, 1))"""
                     )
                     await connection.commit()
+                workload_columns = await connection.execute("PRAGMA table_info(workloads)")
+                workload_column_names = {row[1] for row in await workload_columns.fetchall()}
+                await workload_columns.close()
+                if "max_spend_wei" not in workload_column_names:
+                    await connection.execute(
+                        """ALTER TABLE workloads ADD COLUMN max_spend_wei INTEGER
+                           CHECK (max_spend_wei > 0)"""
+                    )
+                authorization_columns = await connection.execute(
+                    "PRAGMA table_info(authorizations)"
+                )
+                authorization_column_names = {
+                    row[1] for row in await authorization_columns.fetchall()
+                }
+                await authorization_columns.close()
+                if "signer_last_update_ns" not in authorization_column_names:
+                    await connection.execute(
+                        """ALTER TABLE authorizations
+                           ADD COLUMN signer_last_update_ns INTEGER
+                           CHECK (signer_last_update_ns >= 0)"""
+                    )
+                if "authorized_fee" not in authorization_column_names:
+                    await connection.execute(
+                        """ALTER TABLE authorizations
+                           ADD COLUMN authorized_fee INTEGER NOT NULL DEFAULT 0
+                           CHECK (authorized_fee >= 0)"""
+                    )
+                await connection.commit()
             except BaseException:
                 await connection.rollback()
                 raise

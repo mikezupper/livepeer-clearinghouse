@@ -15,7 +15,11 @@
     "useDefineForClassFields": false,
     "plugins": [
       { "name": "@effect/language-service" },
-      { "name": "ts-lit-plugin", "strict": true }
+      {
+        "name": "ts-lit-plugin",
+        "strict": true,
+        "globalAttributes": ["popover", "popovertarget"]
+      }
     ]
   }
 }

@@ -34,10 +34,12 @@ The domain has no FastAPI, SQLite, OAuth, Resend, or Kafka dependency. Applicati
 
 - A user resolves from a normalized verified email.
 - Each user directly owns one personal account.
-- An API credential belongs to one user/account and is revocable.
+- An account API credential belongs to one user/account, authorizes control-plane requests, and is revocable.
 - A capability offer records an orchestrator/runner observation and exact rational price.
-- A workload freezes one offer and creates one short-lived, hashed access token.
-- The first accepted signer state binds that workload to one state/orchestrator.
+- A workload freezes one offer, optionally freezes a maximum spend, and creates
+  one short-lived, hashed access token.
+- The first accepted signer state binds that workload to one state/orchestrator;
+  each sequence can reserve exposure before tickets leave the signer.
 - A usage event records signer evidence and is matched through `auth_id == workload_id`.
 - A workload cost aggregates measured quantity, quote-derived fee, and signer-reported fee without treating either as payment settlement.
 
@@ -51,7 +53,7 @@ The default database enables foreign keys and WAL, applies a bounded busy timeou
 
 ## Authentication boundary
 
-Email OTP is the default. Challenges have six digits, a bounded lifetime and attempts, and only a keyed digest is stored. Successful verification resolves the personal account and issues an HTTP-only same-site browser session plus a separate CSRF value. Browser mutations require a configured exact Origin and matching CSRF cookie/header. SDK credentials bypass browser CSRF and remain account-scoped.
+Email OTP is the default. Challenges have six digits, a bounded lifetime and attempts, and only a keyed digest is stored. Successful verification resolves the personal account and issues an HTTP-only same-site browser session plus a separate CSRF value. Browser mutations require a configured exact Origin and matching CSRF cookie/header. Account API credentials bypass browser CSRF and remain account-scoped; they are not signer credentials.
 
 Google and GitHub are optional. Startup rejects enabled or partial provider configuration unless both client ID and secret are present. OAuth uses authorization code, PKCE, one-shot state, and Google nonce verification.
 
@@ -65,7 +67,7 @@ Static orchestrators are explicit deployment inputs. They are embedded in genera
 
 ## Signer authorization boundary
 
-The signer calls `/v1/compat/go-livepeer/authorize` with a private deployment credential. A user workload token is forwarded in the original Authorization header. The policy denies when:
+The signer calls `/v1/compat/go-livepeer/authorize` with a private deployment credential. The base64 workload SDK token given to the gateway contains a workload access credential, which the gateway forwards in the original Authorization header. The policy denies when:
 
 - the global stop is active;
 - the token is unknown;
@@ -73,8 +75,17 @@ The signer calls `/v1/compat/go-livepeer/authorize` with a private deployment cr
 - the signer's initial price exceeds the frozen quote;
 - the selected orchestrator conflicts with the observed offer; or
 - an already-bound workload is presented with another state ID.
+- the signed sequence/timestamp cannot be advanced atomically; or
+- attributed fee plus pending exposure and the new reservation would exceed an
+  optional immutable workload ceiling.
 
 On success, `auth_id` is the workload ID. That deliberate identity makes downstream metering attribution inspectable and compatible with the pinned signer event.
+
+For budgeted workloads, the core conservatively reproduces the pinned
+go-livepeer v0.9.2 billing quantity from the job type and signed state timing.
+It stores cumulative authorized fee and reconciles pending exposure as metering
+arrives. This is authorization policy, not custody or settlement. Unbudgeted
+workloads retain the compatibility path.
 
 ## Metering boundary
 

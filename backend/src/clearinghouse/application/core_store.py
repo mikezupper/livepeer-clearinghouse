@@ -158,6 +158,9 @@ class CoreTransaction(Protocol):
     async def usage_aggregates(
         self, workload_ids: Sequence[WorkloadId]
     ) -> Sequence[UsageAggregate]: ...
+    async def authorization_fees(
+        self, workload_ids: Sequence[WorkloadId]
+    ) -> dict[WorkloadId, int]: ...
     async def revoke_workload(self, workload_id: WorkloadId, *, at: datetime) -> bool: ...
     async def bind_workload(
         self,

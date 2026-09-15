@@ -1,6 +1,7 @@
 """HTTP API for discovery, workloads, signer authorization, usage, and administration."""
 
 import hmac
+import re
 from datetime import UTC, datetime
 from typing import Annotated, cast
 
@@ -27,6 +28,7 @@ class WorkloadRequest(Model):
     offer_id: str = Field(min_length=1, max_length=128)
     ttl_seconds: int = Field(default=3600, ge=60, le=86_400)
     client_reference: str | None = Field(default=None, max_length=256)
+    max_spend_wei: str | None = Field(default=None, pattern=r"^[1-9][0-9]*$", max_length=78)
 
 
 class StopRequest(Model):
@@ -45,6 +47,7 @@ class GoState(BaseModel):
     AuthID: str = ""
     App: str = Field(default="", max_length=256)
     Type: str = Field(default="", max_length=32)
+    LastUpdate: str = Field(default="", max_length=64)
 
 
 class GoRequest(Model):
@@ -119,6 +122,23 @@ def _price(price) -> dict[str, object]:  # type: ignore[no-untyped-def]
     }
 
 
+_GO_TIMESTAMP = re.compile(
+    r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$"
+)
+
+
+def _go_timestamp_ns(value: str) -> int | None:
+    if not value:
+        return None
+    matched = _GO_TIMESTAMP.fullmatch(value)
+    if matched is None:
+        return None
+    base, fraction, offset = matched.groups()
+    parsed = datetime.fromisoformat(base + ("+00:00" if offset == "Z" else offset))
+    seconds = int(parsed.timestamp())
+    return seconds * 1_000_000_000 + int((fraction or "").ljust(9, "0"))
+
+
 def _offer(value) -> dict[str, object]:  # type: ignore[no-untyped-def]
     return {
         "id": value.id,
@@ -149,6 +169,7 @@ def _workload(value) -> dict[str, object]:  # type: ignore[no-untyped-def]
         "quoted_price": _price(value.max_price),
         "status": value.status,
         "client_reference": value.client_reference,
+        "max_spend_wei": str(value.max_spend_wei) if value.max_spend_wei is not None else None,
         "runner_session_id": value.runner_session_id,
         "manifest_id": value.manifest_id,
         "payment_session_id": value.payment_session_id,
@@ -285,6 +306,7 @@ def create_core_router(
                 offer_id=body.offer_id,
                 ttl_seconds=body.ttl_seconds,
                 client_reference=body.client_reference,
+                max_spend_wei=int(body.max_spend_wei) if body.max_spend_wei is not None else None,
             )
         except ValueError as error:
             raise HTTPException(400, str(error)) from error
@@ -354,6 +376,14 @@ def create_core_router(
                     "computed_fee": str(cost.computed_fee),
                     "currency": cost.currency,
                     "event_count": cost.event_count,
+                    "spend_ceiling": (
+                        str(cost.spend_ceiling) if cost.spend_ceiling is not None else None
+                    ),
+                    "authorized_fee": str(cost.authorized_fee),
+                    "pending_fee": str(cost.pending_fee),
+                    "remaining_spend": (
+                        str(cost.remaining_spend) if cost.remaining_spend is not None else None
+                    ),
                 }
                 for cost in costs.items
             ],
@@ -406,6 +436,7 @@ def create_core_router(
                 app=state.App,
                 job_type=state.Type,
                 payment_session_id=state.PMSessionID or None,
+                last_update_ns=_go_timestamp_ns(state.LastUpdate),
             ),
         )
         result: dict[str, object] = {

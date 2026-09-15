@@ -44,6 +44,7 @@ export const Workload = Schema.Struct({
   quoted_price: ExactPrice, status: Schema.Literal("active", "expired", "ended", "revoked"),
   client_reference: Schema.NullOr(Schema.String), runner_session_id: Schema.NullOr(Schema.String),
   manifest_id: Schema.NullOr(Schema.String), payment_session_id: Schema.NullOr(Schema.String),
+  max_spend_wei: Schema.NullOr(PositiveIntegerString),
   created_at: IsoDateTimeString, expires_at: IsoDateTimeString
 })
 export type Workload = typeof Workload.Type
@@ -66,7 +67,9 @@ export const UsageItems = Schema.Struct({ items: Schema.Array(Usage), ...PageFie
 export const Cost = Schema.Struct({
   workload: Workload, measured_quantity: UnsignedIntegerString, measured_unit: Schema.String,
   quoted_fee: UnsignedIntegerString, computed_fee: UnsignedIntegerString, currency: Schema.String,
-  event_count: Schema.Number
+  event_count: Schema.Number, spend_ceiling: Schema.NullOr(PositiveIntegerString),
+  authorized_fee: UnsignedIntegerString, pending_fee: UnsignedIntegerString,
+  remaining_spend: Schema.NullOr(UnsignedIntegerString)
 })
 export type Cost = typeof Cost.Type
 export const Costs = Schema.Struct({ items: Schema.Array(Cost), ...PageFields })

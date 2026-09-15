@@ -133,6 +133,12 @@
     border: var(--och-border-width) solid var(--och-color-border);
     border-radius: var(--och-radius-small);
   }
+
+  admin-app::part(notice-danger) {
+    color: var(--och-color-text);
+    background: var(--och-color-danger-soft);
+    border-color: var(--och-color-danger);
+  }
 }
 
 @layer admin-states {

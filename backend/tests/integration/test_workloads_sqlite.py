@@ -1,6 +1,8 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from clearinghouse.application.usage import UsageService
 from clearinghouse.application.workloads import SignerState, WorkloadService
 from clearinghouse.domain.core import CapabilityOffer, ExactPrice, PriceObservationId
 from clearinghouse.infrastructure.sqlite import SqliteStore
@@ -150,4 +152,99 @@ async def test_authorization_rejects_unknown_expensive_and_wrong_orchestrator(
         ),
     )
     assert wrong.reason == "orchestrator_mismatch"
+    await store.close()
+
+
+async def test_spend_ceiling_reserves_exact_fees_and_rejects_concurrent_forks(
+    tmp_path: Path,
+) -> None:
+    now = datetime(2026, 9, 11, 12, tzinfo=UTC)
+    store = SqliteStore(tmp_path / "spend-ceiling.db")
+    await store.initialize()
+    offer = CapabilityOffer(
+        PriceObservationId("price_fixed"),
+        "https://runner.example.com",
+        "0x0000000000000000000000000000000000000001",
+        "image-to-video",
+        None,
+        (),
+        ExactPrice(3, 1, "wei", "fixed"),
+        now,
+        now + timedelta(minutes=5),
+    )
+    async with store.transaction() as transaction:
+        identity = await transaction.resolve_identity("budget@example.com", admin_email=None)
+        await transaction.replace_offers([offer])
+    service = WorkloadService(
+        store,
+        pepper="workload-pepper-long-enough",
+        signer_id="signer_default0000",
+        public_signer_url="https://signer.example.com",
+        public_discovery_url="https://discovery.example.com",
+        clock=lambda: now,
+        secret_factory=iter(("token", "id")).__next__,
+    )
+    issued = await service.create(identity, offer_id=offer.id, max_spend_wei=7)
+    initial = SignerState(
+        "state-budget",
+        0,
+        offer.orchestrator_address or "",
+        3,
+        1,
+        app=offer.capability,
+        job_type="fixed",
+        last_update_ns=1_000_000_000,
+    )
+    assert (await service.authorize(issued.access.token, initial)).allowed
+    assert (await service.authorize(issued.access.token, initial)).allowed
+
+    results = await asyncio.gather(
+        service.authorize(
+            issued.access.token,
+            SignerState(
+                "state-budget",
+                1,
+                initial.orchestrator_address,
+                3,
+                1,
+                app=offer.capability,
+                job_type="fixed",
+                last_update_ns=2_000_000_000,
+            ),
+        ),
+        service.authorize(
+            issued.access.token,
+            SignerState(
+                "state-budget",
+                1,
+                initial.orchestrator_address,
+                3,
+                1,
+                app=offer.capability,
+                job_type="fixed",
+                last_update_ns=3_000_000_000,
+            ),
+        ),
+    )
+    assert sorted(result.status for result in results) == [200, 409]
+    denied = await service.authorize(
+        issued.access.token,
+        SignerState(
+            "state-budget",
+            2,
+            initial.orchestrator_address,
+            3,
+            1,
+            app=offer.capability,
+            job_type="fixed",
+            last_update_ns=4_000_000_000,
+        ),
+    )
+    assert (denied.status, denied.reason) == (402, "spend_ceiling_exceeded")
+
+    costs = await UsageService(store, signer_id="signer_default0000").costs(identity)
+    assert len(costs.items) == 1
+    assert costs.items[0].authorized_fee == 6
+    assert costs.items[0].pending_fee == 6
+    assert costs.items[0].remaining_spend == 1
     await store.close()

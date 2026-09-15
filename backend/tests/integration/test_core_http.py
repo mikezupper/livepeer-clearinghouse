@@ -120,7 +120,11 @@ async def test_complete_user_signer_and_admin_http_slice(tmp_path: Path) -> None
         assert discovery.json()[0]["runners"][0]["app"] == "live"
         created = await user.post(
             "/v1/workloads",
-            json={"offer_id": offer_id, "client_reference": "sdk-job-1"},
+            json={
+                "offer_id": offer_id,
+                "client_reference": "sdk-job-1",
+                "max_spend_wei": "25",
+            },
             headers=user_headers,
         )
         assert created.status_code == 201
@@ -166,11 +170,18 @@ async def test_complete_user_signer_and_admin_http_slice(tmp_path: Path) -> None
                     "AuthID": "",
                     "App": "live",
                     "Type": "live",
+                    "LastUpdate": "2026-09-11T12:00:00.123456789Z",
                 },
             },
         )
         assert callback.json()["auth_id"] == workload["id"]
-        assert (await user.get("/v1/costs")).json()["items"][0]["quoted_fee"] == "0"
+        cost = (await user.get("/v1/costs")).json()["items"][0]
+        assert cost["quoted_fee"] == "0"
+        assert (cost["spend_ceiling"], cost["pending_fee"], cost["remaining_spend"]) == (
+            "25",
+            "20",
+            "5",
+        )
 
     async with httpx.AsyncClient(
         transport=transport, base_url="https://app.example.com"

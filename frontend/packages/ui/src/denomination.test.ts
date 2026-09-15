@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   denominationStorageKey,
   formatAmount,
+  parseDisplayAmount,
   parseDisplayDenomination,
   readDisplayDenomination,
   setDisplayDenomination,
@@ -54,6 +55,27 @@ describe("display denomination", () => {
     expect(formatAmount("7", "1", "wei", "wei")).toEqual({
       primary: "7 wei",
       exactWei: undefined
+    })
+  })
+
+  it("converts exact spend-ceiling input to wei without floating point", () => {
+    expect(parseDisplayAmount(" 42 ", "wei")).toEqual({ _tag: "Valid", wei: "42" })
+    expect(parseDisplayAmount("0.000000000000000042", "eth")).toEqual({
+      _tag: "Valid", wei: "42"
+    })
+    expect(parseDisplayAmount("1", "eth")).toEqual({
+      _tag: "Valid", wei: "1000000000000000000"
+    })
+    expect(parseDisplayAmount("1.5", "eth")).toEqual({
+      _tag: "Valid", wei: "1500000000000000000"
+    })
+    expect(parseDisplayAmount("", "eth")).toEqual({ _tag: "Empty" })
+    expect(parseDisplayAmount("0", "wei")).toMatchObject({ _tag: "Invalid" })
+    expect(parseDisplayAmount("1.5", "wei")).toMatchObject({ _tag: "Invalid" })
+    expect(parseDisplayAmount("0", "eth")).toMatchObject({ _tag: "Invalid" })
+    expect(parseDisplayAmount(".5", "eth")).toMatchObject({ _tag: "Invalid" })
+    expect(parseDisplayAmount("0.0000000000000000001", "eth")).toMatchObject({
+      _tag: "Invalid"
     })
   })
 

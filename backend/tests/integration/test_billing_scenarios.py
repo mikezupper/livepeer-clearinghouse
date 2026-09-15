@@ -41,6 +41,7 @@ async def harness(
     numerator: int,
     denominator: int = 1,
     capability: str = "qualification/app",
+    max_spend_wei: int | None = None,
 ) -> Harness:
     store = SqliteStore(tmp_path / f"{unit}.db")
     await store.initialize()
@@ -67,7 +68,7 @@ async def harness(
         clock=lambda: NOW,
         secret_factory=iter((f"token-{unit}", f"id-{unit}")).__next__,
     )
-    issued = await workloads.create(identity, offer_id=offer.id)
+    issued = await workloads.create(identity, offer_id=offer.id, max_spend_wei=max_spend_wei)
     return Harness(store, identity, workloads, UsageService(store, signer_id=SIGNER), issued)
 
 
@@ -310,4 +311,61 @@ async def test_lv2v_pixel_accounting_and_unit_rejection(tmp_path: Path) -> None:
     cost = (await value.usage.costs(value.identity))[0]
     assert (cost.measured_quantity, cost.measured_unit) == (921_600, "pixel")
     assert (cost.quoted_fee, cost.computed_fee, cost.event_count) == (2_150_400, 2_150_400, 1)
+    await value.store.close()
+
+
+async def test_workload_spend_ceiling_reconciles_pending_exposure(tmp_path: Path) -> None:
+    value = await harness(tmp_path, unit="fixed", numerator=3, max_spend_wei=7)
+    initial = SignerState(
+        "state-budget",
+        0,
+        ORCH,
+        3,
+        1,
+        app=value.issued.workload.capability,
+        job_type="fixed",
+        last_update_ns=1,
+    )
+    assert (await value.workloads.authorize(value.issued.access.token, initial)).allowed
+    assert (await value.workloads.authorize(value.issued.access.token, initial)).allowed
+    second = SignerState(
+        "state-budget",
+        1,
+        ORCH,
+        3,
+        1,
+        app=value.issued.workload.capability,
+        job_type="fixed",
+        last_update_ns=2,
+    )
+    assert (await value.workloads.authorize(value.issued.access.token, second)).allowed
+
+    event = decode_signed_ticket(
+        payload(
+            value.issued,
+            event_name="budget-first-reconciled",
+            sequence=0,
+            computed_fee=3,
+            state_id="state-budget",
+        )
+    )
+    assert event is not None and await value.usage.ingest(event)
+    cost = (await value.usage.costs(value.identity))[0]
+    assert (cost.computed_fee, cost.authorized_fee, cost.pending_fee) == (3, 6, 3)
+    assert (cost.spend_ceiling, cost.remaining_spend) == (7, 1)
+
+    denied = await value.workloads.authorize(
+        value.issued.access.token,
+        SignerState(
+            "state-budget",
+            2,
+            ORCH,
+            3,
+            1,
+            app=value.issued.workload.capability,
+            job_type="fixed",
+            last_update_ns=3,
+        ),
+    )
+    assert (denied.status, denied.reason) == (402, "spend_ceiling_exceeded")
     await value.store.close()

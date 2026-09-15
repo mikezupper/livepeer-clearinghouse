@@ -23,7 +23,7 @@ metering.
 | --- | --- | --- |
 | `user_id` | Core | One human identity with one verified primary email |
 | `account_id` | Core | Usage and signer-access boundary; personal by default |
-| `credential_id` | Core | Revocable SDK credential; plaintext is returned once |
+| `credential_id` | Core | Revocable account API credential for control-plane requests; plaintext is returned once |
 | `workload_id` | Core | Stable correlation identity for one SDK workload |
 | `price_observation_id` | Core | Immutable network offer observed before selection |
 | `authorization_id` | Core | One permitted signer state and sequence |
@@ -47,8 +47,11 @@ workload snapshots the selected observation. It is immutable even when the
 network later advertises different terms.
 
 The listed-cost estimate is the ceiling of `quantity * numerator / denominator`.
-Actual cost is the sum of matched signer `computed_fee` values. APIs and UIs
-label these independently; a quote is not silently presented as settlement.
+Actual cost is the sum of matched signer `computed_fee` values. An optional
+workload ceiling is enforcement, not an estimate: authorization reserves
+conservative pending exposure before tickets are returned. APIs and UIs label
+estimated, quoted, signer-reported, pending, and remaining values independently;
+none is silently presented as settlement.
 
 ## Workload state
 
@@ -58,12 +61,15 @@ active ──> expired (derived when the access deadline passes)
    └─────> revoked (explicit user cancellation)
 ```
 
-Only an active account, SDK credential, workload token, and workload may
-authorize payment. A workload is bound to one account, user, capability,
-selected offer, maximum accepted price, and expiry. The authorization callback
-records `(signer_id, state_id, sequence_number)` idempotently. It fails closed
-when the state, token, price ceiling, capability, orchestrator, or global stop
-does not agree.
+An account API credential may create and manage workloads but is never forwarded
+to the signer. Only an active account, workload access credential, and workload
+may authorize payment. A workload is bound to one account, user, capability,
+selected offer, maximum accepted price, optional immutable maximum spend, and
+expiry. The authorization callback records a unique `(signer_id, state_id)`,
+the latest sequence, signed-state timestamp, and cumulative authorized fee.
+Latest-sequence retries are idempotent; gaps and concurrent forks fail closed.
+It also fails closed when the state, token, price ceiling, capability,
+orchestrator, global stop, or remaining spend does not agree.
 
 This state describes signer access, not runner execution. Completion and failure
 must come from an authenticated gateway or runner terminal event; the core never

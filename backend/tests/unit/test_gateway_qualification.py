@@ -97,3 +97,20 @@ def test_accounting_accepts_reconciled_usage() -> None:
     cost = {"quoted_fee": "11", "computed_fee": "10", "event_count": 1}
 
     validate_accounting(event, cost)
+
+
+def test_accounting_validates_enforced_spend_reconciliation() -> None:
+    event = {"status": "matched", "quantity": "1", "computed_fee": "3"}
+    cost = {
+        "quoted_fee": "3",
+        "computed_fee": "3",
+        "event_count": 1,
+        "spend_ceiling": "7",
+        "authorized_fee": "6",
+        "pending_fee": "3",
+        "remaining_spend": "1",
+    }
+    validate_accounting(event, cost, 7)
+    cost["remaining_spend"] = "2"
+    with pytest.raises(QualificationError, match="remaining spend"):
+        validate_accounting(event, cost, 7)

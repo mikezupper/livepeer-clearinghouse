@@ -32,6 +32,10 @@ class WorkloadCost:
     computed_fee: int
     currency: str
     event_count: int
+    spend_ceiling: int | None
+    authorized_fee: int
+    pending_fee: int
+    remaining_spend: int | None
 
 
 def normalized_quantity(event: SignedTicketEvent, price: ExactPrice | None) -> tuple[int, str]:
@@ -151,6 +155,9 @@ class UsageService:
             aggregates = await transaction.usage_aggregates(
                 tuple(workload.id for workload in workload_page.items)
             )
+            authorization_fees = await transaction.authorization_fees(
+                tuple(workload.id for workload in workload_page.items)
+            )
         grouped = {aggregate.workload_id: aggregate for aggregate in aggregates}
         result: list[WorkloadCost] = []
         for workload in workload_page.items:
@@ -161,15 +168,27 @@ class UsageService:
                 if observed and observed.measured_unit
                 else _base_unit(workload.max_price)
             )
+            computed_fee = observed.computed_fee if observed else 0
+            authorized_fee = authorization_fees.get(workload.id, 0)
+            pending_fee = max(authorized_fee - computed_fee, 0)
+            remaining_spend = (
+                max(workload.max_spend_wei - computed_fee - pending_fee, 0)
+                if workload.max_spend_wei is not None
+                else None
+            )
             result.append(
                 WorkloadCost(
                     workload,
                     quantity,
                     unit,
                     quoted_fee(quantity, unit, workload.max_price),
-                    observed.computed_fee if observed else 0,
+                    computed_fee,
                     workload.max_price.currency,
                     observed.event_count if observed else 0,
+                    workload.max_spend_wei,
+                    authorized_fee,
+                    pending_fee,
+                    remaining_spend,
                 )
             )
         return KeysetPage(tuple(result), workload_page.next_key)

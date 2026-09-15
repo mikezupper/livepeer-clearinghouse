@@ -102,6 +102,12 @@
             "title": "Initialpriceperunit",
             "type": "integer"
           },
+          "LastUpdate": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Lastupdate",
+            "type": "string"
+          },
           "OrchestratorAddress": {
             "title": "Orchestratoraddress",
             "type": "string"
@@ -227,6 +233,19 @@
               }
             ],
             "title": "Client Reference"
+          },
+          "max_spend_wei": {
+            "anyOf": [
+              {
+                "maxLength": 78,
+                "pattern": "^[1-9][0-9]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Spend Wei"
           },
           "offer_id": {
             "maxLength": 128,

@@ -70,7 +70,7 @@ async def test_sdk_credential_is_returned_once_and_revocable(access) -> None:  #
     assert await service.authenticate_credential(created.token) == created.credential
     assert list(await service.list_credentials(issued.session.identity)) == [created.credential]
     await service.revoke_credential(issued.session.identity, created.credential.id)
-    with pytest.raises(AccessDenied, match="invalid SDK credential"):
+    with pytest.raises(AccessDenied, match="invalid account API credential"):
         await service.authenticate_credential(created.token)
     with pytest.raises(AccessDenied, match="credential not found"):
         await service.revoke_credential(issued.session.identity, created.credential.id)

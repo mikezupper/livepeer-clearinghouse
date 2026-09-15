@@ -1,8 +1,8 @@
 import { Effect } from "effect"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { AdminApi, ApiFailure, PayloadFailure, runAdmin } from "./api.js"
+import { AdminApi, runAdmin, type Failure } from "./api.js"
 
-const run = <A>(use: (api: AdminApi["Type"]) => Effect.Effect<A, ApiFailure | PayloadFailure>) =>
+const run = <A>(use: (api: AdminApi["Type"]) => Effect.Effect<A, Failure>) =>
   runAdmin(Effect.flatMap(AdminApi, use))
 
 describe("admin API", () => {
@@ -33,22 +33,22 @@ describe("admin API", () => {
   it("distinguishes HTTP, transport, and invalid-payload failures", async () => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response("{}", { status: 403 }))))
     await expect(runAdmin(Effect.either(Effect.flatMap(AdminApi, (api) => api.session())))).resolves.toMatchObject({
-      _tag: "Left", left: { _tag: "ApiFailure", status: 403 }
+      _tag: "Left", left: { _tag: "ApiFailure", status: 403, operation: "check administrator session" }
     })
 
     vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))))
     await expect(runAdmin(Effect.either(Effect.flatMap(AdminApi, (api) => api.session())))).resolves.toMatchObject({
-      _tag: "Left", left: { _tag: "PayloadFailure" }
+      _tag: "Left", left: { _tag: "NetworkFailure", operation: "check administrator session" }
     })
 
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response("not-json", { status: 200 }))))
     await expect(runAdmin(Effect.either(Effect.flatMap(AdminApi, (api) => api.session())))).resolves.toMatchObject({
-      _tag: "Left", left: { _tag: "PayloadFailure" }
+      _tag: "Left", left: { _tag: "InvalidPayload", operation: "check administrator session" }
     })
 
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response("{}", { status: 200 }))))
     await expect(runAdmin(Effect.either(Effect.flatMap(AdminApi, (api) => api.session())))).resolves.toMatchObject({
-      _tag: "Left", left: { _tag: "PayloadFailure" }
+      _tag: "Left", left: { _tag: "InvalidPayload", operation: "check administrator session" }
     })
   })
 
@@ -67,7 +67,7 @@ describe("admin API", () => {
       JSON.stringify({ ...overview, computed_fee: "20.5" }), { status: 200 }
     ))))
     await expect(decodeOverview()).resolves.toMatchObject({
-      _tag: "Left", left: { _tag: "PayloadFailure" }
+      _tag: "Left", left: { _tag: "InvalidPayload", operation: "load the administration overview" }
     })
 
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(
@@ -77,7 +77,7 @@ describe("admin API", () => {
       }), { status: 200 }
     ))))
     await expect(decodeOverview()).resolves.toMatchObject({
-      _tag: "Left", left: { _tag: "PayloadFailure" }
+      _tag: "Left", left: { _tag: "InvalidPayload", operation: "load the administration overview" }
     })
   })
 
@@ -89,7 +89,8 @@ describe("admin API", () => {
         offer_id: "offer_123", quoted_price: {
           numerator: "2", denominator: "1", currency: "wei", quantity_unit: "fixed"
         }, status: "expired", client_reference: null, runner_session_id: null,
-        manifest_id: null, payment_session_id: null, created_at: at, expires_at: at
+        manifest_id: null, payment_session_id: null, max_spend_wei: null,
+        created_at: at, expires_at: at
       }], next_cursor: null
     }), { status: 200 }))))
 

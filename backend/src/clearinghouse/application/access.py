@@ -1,4 +1,4 @@
-"""Small authentication, personal-account, and SDK credential workflows."""
+"""Small authentication, personal-account, and account API credential workflows."""
 
 from __future__ import annotations
 
@@ -267,7 +267,7 @@ class AccessService:
         async with self.store.transaction() as transaction:
             credential = await transaction.get_credential(self.digest("credential", token))
         if credential is None:
-            raise AccessDenied("invalid SDK credential")
+            raise AccessDenied("invalid account API credential")
         return credential
 
     async def list_credentials(

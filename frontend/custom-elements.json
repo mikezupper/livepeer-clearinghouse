@@ -56,12 +56,39 @@
             },
             {
               "kind": "field",
+              "name": "usersState",
+              "type": {
+                "text": "CollectionState"
+              },
+              "privacy": "private",
+              "default": "\"loading\""
+            },
+            {
+              "kind": "field",
+              "name": "workloadsState",
+              "type": {
+                "text": "CollectionState"
+              },
+              "privacy": "private",
+              "default": "\"loading\""
+            },
+            {
+              "kind": "field",
               "name": "message",
               "type": {
                 "text": "string"
               },
               "privacy": "private",
               "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "messageError",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
             },
             {
               "kind": "field",
@@ -632,7 +659,8 @@
               "type": {
                 "text": "Notice | undefined"
               },
-              "privacy": "private"
+              "privacy": "private",
+              "default": "undefined"
             },
             {
               "kind": "field",
@@ -645,6 +673,15 @@
             {
               "kind": "field",
               "name": "busy",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "routeLoading",
               "type": {
                 "text": "boolean"
               },
@@ -968,6 +1005,24 @@
                 },
                 {
                   "name": "currency",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "spendCeilingField",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "prefix",
                   "type": {
                     "text": "string"
                   }

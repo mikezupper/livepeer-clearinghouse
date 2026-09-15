@@ -111,6 +111,20 @@
       "minimum_events": 1
     },
     {
+      "id": "workload-spend-ceiling",
+      "source": "controlled",
+      "action": "scenario",
+      "scenario": "workload-spend-ceiling",
+      "capability": "qualification/fixed-budget",
+      "model": null,
+      "orchestrators": [],
+      "price": {"currency": "wei", "unit": "fixed", "max_numerator": 3, "max_denominator": 1},
+      "max_quantity": 2,
+      "max_authorized_wei": 7,
+      "duration_seconds": 0,
+      "minimum_events": 1
+    },
+    {
       "id": "lv2v-live",
       "source": "live",
       "action": "lv2v",

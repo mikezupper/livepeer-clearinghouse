@@ -4,6 +4,10 @@ export interface DisplayAmount {
   readonly primary: string
   readonly exactWei: string | undefined
 }
+export type ParsedDisplayAmount =
+  | { readonly _tag: "Empty" }
+  | { readonly _tag: "Invalid"; readonly message: string }
+  | { readonly _tag: "Valid"; readonly wei: string }
 type StorageReader = Pick<Storage, "getItem">
 type StorageWriter = Pick<Storage, "setItem">
 
@@ -85,4 +89,26 @@ export const formatAmount = (
     primary: `${decimal.exact ? "" : "≈"}${decimal.text} ETH`,
     exactWei
   }
+}
+
+export const parseDisplayAmount = (
+  value: string,
+  denomination: DisplayDenomination
+): ParsedDisplayAmount => {
+  const input = value.trim()
+  if (input === "") return { _tag: "Empty" }
+  if (denomination === "wei") {
+    return /^[1-9][0-9]*$/u.test(input)
+      ? { _tag: "Valid", wei: input }
+      : { _tag: "Invalid", message: "Enter a positive whole number of wei." }
+  }
+  const matched = /^(0|[1-9][0-9]*)(?:\.([0-9]{1,18}))?$/u.exec(input)
+  if (matched === null) {
+    return { _tag: "Invalid", message: "Enter a positive ETH amount with no more than 18 decimal places." }
+  }
+  const wei = BigInt(matched[1] ?? "0") * WEI_PER_ETH
+    + BigInt((matched[2] ?? "").padEnd(18, "0") || "0")
+  return wei > 0n
+    ? { _tag: "Valid", wei: wei.toString() }
+    : { _tag: "Invalid", message: "Maximum spend must be greater than zero." }
 }

@@ -34,7 +34,7 @@ knowledge. `AGENTS.md` is its map; Beads is the only source of work status.
 - [HTTP API](../contracts/openapi.yaml)
 - [Signer-event input](../contracts/asyncapi.yaml)
 - [go-livepeer authorization callback](../contracts/http/v1/go-livepeer-authorize.md)
-- [Python gateway SDK token](../contracts/sdk/livepeer-python-gateway-v1.md)
+- [Python gateway workload SDK token](../contracts/sdk/livepeer-python-gateway-v1.md)
 - [SQLite and storage-adapter invariants](../contracts/domain/v1/database.md)
 - [Build-time extension ports](../contracts/ports/v2/protocols.py)
 - [Core event envelope](../contracts/events/v2/core-event.schema.json)

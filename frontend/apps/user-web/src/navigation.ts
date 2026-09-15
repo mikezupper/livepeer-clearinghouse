@@ -13,7 +13,7 @@ export const navigation = Object.freeze([
   { route: "discovery", label: "Network", href: "/discovery", summary: "Compare capabilities, runners, and advertised prices.", icon: "catalog" },
   { route: "estimate", label: "Cost estimator", href: "/estimate", summary: "Estimate a workload at a currently advertised exact rate.", icon: "calculator" },
   { route: "workloads", label: "Workloads", href: "/workloads", summary: "Create quoted SDK access and control active work.", icon: "workload" },
-  { route: "credentials", label: "API credentials", href: "/credentials", summary: "Issue and revoke Python SDK credentials.", icon: "key" },
+  { route: "credentials", label: "Account API credentials", href: "/credentials", summary: "Issue and revoke account-scoped control-plane credentials.", icon: "key" },
   { route: "usage", label: "Usage & cost", href: "/usage", summary: "Compare measured quantity, quoted cost, and signer fees.", icon: "activity" },
   { route: "profile", label: "Profile", href: "/profile", summary: "Review account identity and session security.", icon: "user" }
 ] satisfies ReadonlyArray<NavigationItem>)

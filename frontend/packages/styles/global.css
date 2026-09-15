@@ -173,6 +173,12 @@
     --och-content-max: 80rem;
     --och-shell-sidebar-size: 16rem;
     --och-control-min-block-size: 2.75rem;
+    --och-help-trigger-size: 1.5rem;
+    --och-help-max-size: 24rem;
+    --och-help-font-size: var(--och-font-size-caption);
+    --och-help-color: var(--och-color-text-muted);
+    --och-help-background: transparent;
+    --och-help-border: var(--och-color-border-strong);
     --och-motion-fast: 150ms;
     --och-motion-standard: 220ms;
   }

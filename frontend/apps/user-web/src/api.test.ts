@@ -8,11 +8,12 @@ const workload = {
   id: "work_123", account_id: "acct_123", capability: "live", model: null,
   offer_id: "offer_123", quoted_price: price, status: "active",
   client_reference: null, runner_session_id: null, manifest_id: null,
-  payment_session_id: null, created_at: at, expires_at: at
+  payment_session_id: null, max_spend_wei: null, created_at: at, expires_at: at
 }
 const cost = {
   workload, measured_quantity: "10", measured_unit: "pixel", quoted_fee: "20",
-  computed_fee: "20", currency: "wei", event_count: 1
+  computed_fee: "20", currency: "wei", event_count: 1, spend_ceiling: null,
+  authorized_fee: "20", pending_fee: "0", remaining_spend: null
 }
 const run = <A>(use: (api: UserApi["Type"]) => Effect.Effect<A, UserFailure>) =>
   runUser(Effect.flatMap(UserApi, use))

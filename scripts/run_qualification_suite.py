@@ -119,6 +119,7 @@ def main() -> int:
                 action=case.action,
                 request_payload=payload,
                 minimum_events=case.minimum_events,
+                max_spend_wei=case.max_authorized_wei,
             )
             evidence, path = qualify(settings)
             print(f"{case.id}: {evidence['status']} ({path})")

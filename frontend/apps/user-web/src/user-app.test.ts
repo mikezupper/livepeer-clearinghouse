@@ -9,7 +9,7 @@ const price = { numerator: "2", denominator: "1", currency: "wei", quantity_unit
 const offer = { id: "price_123", runner_url: "https://runner.example.com", orchestrator_address: null, capability: "live", model: "noop", constraints: {}, price, observed_at: at, expires_at: at }
 const secondsOffer = { ...offer, id: "price_seconds", capability: "stream", price: { ...price, numerator: "5", denominator: "2", quantity_unit: "seconds" } }
 const unsupportedOffer = { ...offer, id: "price_unknown", capability: "future", price: { ...price, quantity_unit: "requests-per-fortnight" } }
-const workload = { id: "work_123", account_id: session.account_id, capability: "live", model: "noop", offer_id: offer.id, quoted_price: price, status: "active", client_reference: "job-1", runner_session_id: null, manifest_id: null, payment_session_id: null, created_at: at, expires_at: at }
+const workload = { id: "work_123", account_id: session.account_id, capability: "live", model: "noop", offer_id: offer.id, quoted_price: price, status: "active", client_reference: "job-1", runner_session_id: null, manifest_id: null, payment_session_id: null, max_spend_wei: "100", created_at: at, expires_at: at }
 
 const reply = (body?: unknown, status = 200): Promise<Response> => Promise.resolve(new Response(
   body === undefined ? null : JSON.stringify(body),
@@ -39,7 +39,7 @@ describe("user application", () => {
       if (path === "/v1/credentials") return reply({ items: [{ id: "cred_123", name: "Python", created_at: at, revoked_at: null }], next_cursor: null })
       if (path.startsWith("/v1/credentials/")) return reply(undefined, 204)
       if (path === "/v1/usage") return reply({ items: [{ id: "usage_123", workload_id: workload.id, manifest_id: "manifest", payment_session_id: "pm", capability: "live", quantity: "10", quantity_unit: "pixel", computed_fee: "20", currency: "wei", ticket_count: 1, sequence_number: 0, occurred_at: at, status: "matched" }], next_cursor: null })
-      if (path === "/v1/costs") return reply({ items: [{ workload, measured_quantity: "10", measured_unit: "pixel", quoted_fee: "20", computed_fee: "20", currency: "wei", event_count: 1 }], next_cursor: null })
+      if (path === "/v1/costs") return reply({ items: [{ workload, measured_quantity: "10", measured_unit: "pixel", quoted_fee: "20", computed_fee: "20", currency: "wei", event_count: 1, spend_ceiling: "100", authorized_fee: "30", pending_fee: "10", remaining_spend: "70" }], next_cursor: null })
       if (path === "/v1/summary") return reply({ offers: 3, credentials: 1, workloads: 1, active_workloads: 1, usage_events: 1, computed_fee: "20", currency: "wei" })
       return reply({}, 404)
     })
@@ -56,16 +56,20 @@ describe("user application", () => {
 
   it("signs in and completes every core account workflow", async () => {
     const element = await mount()
+    expect(element.shadowRoot?.textContent).toContain("compare network offers, create quoted workload access")
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("Continue with GitHub"))
     const forms = element.shadowRoot!.querySelectorAll("form")
     forms[0]!.querySelector<HTMLInputElement>("input")!.value = "user@example.com"
     forms[0]!.requestSubmit()
-    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("one-time code has been sent"))
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("one-time code was sent"))
+    expect(forms[0]!.querySelector("input")?.getAttribute("aria-describedby")).toBe("request-code-help")
     const verify = element.shadowRoot!.querySelectorAll("form")[1]!
     const fields = verify.querySelectorAll<HTMLInputElement>("input")
     fields[0]!.value = "user@example.com"
     fields[1]!.value = "123456"
     verify.requestSubmit()
     await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("Clearinghouse overview"))
+    expect(element.shadowRoot?.textContent).toContain("Review your account activity")
     expect(element.shadowRoot?.textContent).toContain("20 wei")
     const denomination = element.shadowRoot!.querySelector("och-denomination-control")!.shadowRoot!.querySelector<HTMLSelectElement>("select")!
     denomination.value = "eth"
@@ -80,10 +84,15 @@ describe("user application", () => {
       element.shadowRoot!.querySelector<HTMLAnchorElement>(`a[href$='/${label}']`)!.click()
       await vi.waitFor(() => expect(element.shadowRoot?.querySelector("h2")?.textContent).toBe(heading))
     }
-    await navigate("discovery", "Capabilities and prices")
+    await navigate("discovery", "Network offers")
+    expect(element.shadowRoot?.textContent).toContain("Compare current network offers")
+    expect(element.shadowRoot?.querySelector("#capability-filter")?.getAttribute("aria-describedby")).toBe("network-filter-help")
     expect(element.shadowRoot?.textContent).toContain("runner.example.com")
     await navigate("estimate", "Cost estimator")
+    expect(element.shadowRoot?.textContent).toContain("does not create access until you submit")
     const estimateForm = element.shadowRoot!.querySelector<HTMLFormElement>("form[part~='form-card']")!
+    expect(estimateForm.querySelector("#estimate-offer")?.getAttribute("aria-describedby")).toBe("offer-help")
+    expect(estimateForm.querySelector("#estimate-reference")?.getAttribute("aria-describedby")).toBe("estimate-reference-help")
     const estimateField = (name: string, value: string): void => {
       const field = estimateForm.querySelector<HTMLInputElement>(`[name='${name}']`)!
       field.value = value
@@ -94,8 +103,17 @@ describe("user application", () => {
     estimateField("frames", "2")
     await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("400 wei"))
     estimateForm.querySelector<HTMLInputElement>("#estimate-reference")!.value = "estimated-job"
+    estimateForm.querySelector<HTMLInputElement>("#estimate-max-spend")!.value = "500"
     estimateForm.requestSubmit()
-    await vi.waitFor(() => expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("sdk-token"))
+    await vi.waitFor(() => expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("Workload SDK token created"))
+    expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("only to livepeer-python-gateway for this quoted workload")
+    expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("expires with the workload")
+    expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("cannot be shown again")
+    expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("sdk-token")
+    const createCall = fetchMock.mock.calls.find(([input, init]) =>
+      new URL(String(input), location.origin).pathname === "/v1/workloads" && init?.method === "POST"
+    )
+    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({ max_spend_wei: "500" })
     element.shadowRoot!.querySelector<HTMLButtonElement>("[data-action='close-secret']")!.click()
     const estimateOffer = estimateForm.querySelector<HTMLSelectElement>("#estimate-offer")!
     estimateOffer.value = secondsOffer.id
@@ -107,25 +125,37 @@ describe("user application", () => {
     estimateOffer.dispatchEvent(new Event("change", { bubbles: true, composed: true }))
     await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("not supported by this estimator"))
     await navigate("workloads", "Workloads")
-    expect(element.shadowRoot?.textContent).toContain("Access ends")
+    expect(element.shadowRoot?.textContent).toContain("Create time-bounded access")
+    expect(element.shadowRoot?.textContent).toContain("Access expires")
     const workloadForm = element.shadowRoot!.querySelector("form")!
     workloadForm.querySelector<HTMLInputElement>("#reference")!.value = "job-1"
     workloadForm.requestSubmit()
     await vi.waitFor(() => expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("sdk-token"))
     element.shadowRoot!.querySelector<HTMLButtonElement>("[data-action='close-secret']")!.click()
     element.shadowRoot!.querySelector<HTMLButtonElement>("[data-action='revoke-workload']")!.click()
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("Workload access revoked"))
 
-    await navigate("credentials", "API credentials")
+    await navigate("credentials", "Account API credentials")
+    expect(element.shadowRoot?.textContent).toContain("software that calls Clearinghouse account APIs")
     const credentialForm = element.shadowRoot!.querySelector("form")!
+    expect(credentialForm.querySelector("input")?.getAttribute("aria-describedby")).toContain("credential-name-help")
     credentialForm.querySelector<HTMLInputElement>("input")!.value = "Python"
     credentialForm.requestSubmit()
-    await vi.waitFor(() => expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("och_live_secret"))
+    await vi.waitFor(() => expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("Account API credential created"))
+    expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("account-scoped Clearinghouse control-plane requests")
+    expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("remains valid until you revoke it")
+    expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("cannot be shown again")
+    expect(element.shadowRoot?.querySelector("dialog")?.textContent).toContain("och_live_secret")
     element.shadowRoot!.querySelector<HTMLButtonElement>("[data-action='close-secret']")!.click()
     element.shadowRoot!.querySelector<HTMLButtonElement>("[data-action='revoke-credential']")!.click()
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("Account API credential revoked"))
 
     await navigate("usage", "Usage and cost")
+    expect(element.shadowRoot?.textContent).toContain("Compare measured quantities, quoted costs, and signer-reported costs")
     expect(element.shadowRoot?.textContent).toContain("20 wei")
     await navigate("profile", "Profile and security")
+    expect(element.shadowRoot?.textContent).toContain("Signing out ends access in this browser")
+    expect(element.shadowRoot?.textContent).toContain("Session expires")
     element.shadowRoot!.querySelector<HTMLButtonElement>("[data-action='logout']")!.click()
     await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("Email a one-time code"))
     expect(fetchMock).toHaveBeenCalled()
@@ -148,6 +178,38 @@ describe("user application", () => {
     document.body.append(element)
     await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("Expired"))
     expect(element.shadowRoot?.querySelector("[data-action='revoke-workload']")).toBeNull()
+  })
+
+  it("explains empty account and filtered states with a next action", async () => {
+    signedIn = true
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const path = new URL(String(input), location.origin).pathname
+      if (path === "/v1/auth/providers") return reply({ providers: ["email"] })
+      if (path === "/v1/auth/session") return reply(session)
+      if (path === "/v1/offers") return reply({ items: [], next_cursor: null })
+      if (path === "/v1/workloads") return reply({ items: [], next_cursor: null })
+      if (path === "/v1/credentials") return reply({ items: [], next_cursor: null })
+      if (path === "/v1/costs") return reply({ items: [], next_cursor: null })
+      if (path === "/v1/summary") return reply({ offers: 0, credentials: 0, workloads: 0, active_workloads: 0, usage_events: 0, computed_fee: "0", currency: "wei" })
+      return reply({}, 404)
+    })
+    history.replaceState(null, "", "/discovery?capability=missing")
+    const element = document.createElement("user-app") as UserApp
+    document.body.append(element)
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("No network offers match these filters"))
+    const filter = element.shadowRoot!.querySelector<HTMLFormElement>("search form")!
+    filter.querySelector<HTMLInputElement>("[name='capability']")!.value = ""
+    filter.requestSubmit()
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("No network offers are available"))
+
+    const navigate = async (path: string, copy: string): Promise<void> => {
+      element.shadowRoot!.querySelector<HTMLAnchorElement>(`a[href='/${path}']`)!.click()
+      await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain(copy))
+    }
+    await navigate("estimate", "No priced network offers found")
+    await navigate("workloads", "No workloads yet")
+    await navigate("credentials", "No account API credentials yet")
+    await navigate("usage", "No workloads to report")
   })
 
   it("filters and walks network offer cursors", async () => {
@@ -222,6 +284,7 @@ describe("user application", () => {
     const element = document.createElement("user-app") as UserApp
     document.body.append(element)
     await vi.waitFor(() => expect(rejectOffers).toBeTypeOf("function"))
+    expect(element.shadowRoot?.textContent).toContain("Loading network offers")
     element.shadowRoot!.querySelector<HTMLAnchorElement>("a[href='/credentials']")!.click()
     await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("Current route"))
     rejectOffers?.(new Error("late failure"))
@@ -232,9 +295,48 @@ describe("user application", () => {
   it("falls back to overview routes and reports API failures", async () => {
     signedIn = true
     history.replaceState(null, "", "/unknown")
-    fetchMock.mockImplementationOnce(() => Promise.reject(new Error("offline")))
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const path = new URL(String(input), location.origin).pathname
+      if (path === "/v1/auth/providers") return reply({ providers: ["email"] })
+      if (path === "/v1/auth/session") return Promise.reject(new Error("offline"))
+      return reply({}, 404)
+    })
     const element = document.createElement("user-app") as UserApp
     document.body.append(element)
-    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("could not complete"))
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("service did not respond"))
+    expect(element.shadowRoot?.textContent).toContain("Check your connection and try again")
+    expect(element.shadowRoot?.querySelector("[role='alert']")).not.toBeNull()
+  })
+
+  it("distinguishes an incompatible account response", async () => {
+    signedIn = true
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const path = new URL(String(input), location.origin).pathname
+      if (path === "/v1/auth/providers") return reply({ providers: ["email"] })
+      if (path === "/v1/auth/session") return reply(session)
+      if (path === "/v1/summary") return Promise.resolve(new Response("not-json", { status: 200 }))
+      return reply({}, 404)
+    })
+    const element = document.createElement("user-app") as UserApp
+    document.body.append(element)
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain("server returned an incompatible response"))
+    expect(element.shadowRoot?.textContent).toContain("Refresh and try again")
+  })
+
+  it.each([
+    [403, "permission"],
+    [422, "information you entered"]
+  ])("explains recoverable HTTP status %i", async (status, expected) => {
+    signedIn = true
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const path = new URL(String(input), location.origin).pathname
+      if (path === "/v1/auth/providers") return reply({ providers: ["email"] })
+      if (path === "/v1/auth/session") return reply(session)
+      if (path === "/v1/summary") return reply({}, status)
+      return reply({}, 404)
+    })
+    const element = document.createElement("user-app") as UserApp
+    document.body.append(element)
+    await vi.waitFor(() => expect(element.shadowRoot?.textContent).toContain(expected))
   })
 })

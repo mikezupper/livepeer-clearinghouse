@@ -22,6 +22,7 @@ SCENARIOS = {
     "runtime-price-policy": "test_runtime_price_policy_uses_exact_rational_comparison",
     "signer-event-replay": "test_duplicate_delayed_and_foreign_events",
     "lv2v-pixel-accounting": "test_lv2v_pixel_accounting_and_unit_rejection",
+    "workload-spend-ceiling": "test_workload_spend_ceiling_reconciles_pending_exposure",
 }
 
 

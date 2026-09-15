@@ -21,6 +21,7 @@ export const Workload = Schema.Struct({
   status: Schema.Literal("active", "expired", "ended", "revoked"),
   client_reference: Schema.NullOr(Schema.String), runner_session_id: Schema.NullOr(Schema.String),
   manifest_id: Schema.NullOr(Schema.String), payment_session_id: Schema.NullOr(Schema.String),
+  max_spend_wei: Schema.NullOr(PositiveIntegerString),
   created_at: IsoDateTimeString, expires_at: IsoDateTimeString
 })
 export type Workload = typeof Workload.Type

@@ -13,12 +13,14 @@ from clearinghouse.application.core_store import AccessIdentity, CoreStore, Stor
 from clearinghouse.application.gateway_access import GatewayAccess
 from clearinghouse.application.pagination import KeysetPage
 from clearinghouse.domain.core import (
+    MAX_SIGNED_AMOUNT,
     AuthorizationId,
     ExactPrice,
     PaymentAuthorization,
     Workload,
     WorkloadId,
     WorkloadStatus,
+    exact_cost,
 )
 
 
@@ -33,6 +35,7 @@ class SignerState:
     job_type: str = ""
     manifest_id: str | None = None
     payment_session_id: str | None = None
+    last_update_ns: int | None = None
 
     @property
     def price(self) -> ExactPrice | None:
@@ -46,6 +49,24 @@ class SignerState:
             if unit
             else None
         )
+
+    def billable_quantity(self, previous_update_ns: int | None) -> int | None:
+        """Conservatively mirror go-livepeer v0.9.2 remote-signer billing units."""
+
+        if self.last_update_ns is None:
+            return None
+        if self.job_type == "fixed":
+            return 1
+        if self.job_type not in {"live", "lv2v"}:
+            return None
+        if previous_update_ns is None:
+            return 10 if self.job_type == "live" else 60 * 1280 * 720 * 30
+        delta_ns = self.last_update_ns - previous_update_ns
+        if delta_ns <= 0:
+            return None
+        units_per_second = 1 if self.job_type == "live" else 1280 * 720 * 30
+        numerator = delta_ns * units_per_second
+        return (numerator + 1_000_000_000 - 1) // 1_000_000_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,9 +115,12 @@ class WorkloadService:
         offer_id: str,
         ttl_seconds: int = 3600,
         client_reference: str | None = None,
+        max_spend_wei: int | None = None,
     ) -> IssuedWorkload:
         if not 60 <= ttl_seconds <= 86_400:
             raise ValueError("workload lifetime must be 60 to 86400 seconds")
+        if max_spend_wei is not None and not 0 < max_spend_wei <= MAX_SIGNED_AMOUNT:
+            raise ValueError("maximum workload spend must be a positive signed 64-bit integer")
         now = self.clock()
         async with self.store.transaction() as transaction:
             offer = await transaction.get_offer(offer_id, now=now)
@@ -115,6 +139,7 @@ class WorkloadService:
                 now + timedelta(seconds=ttl_seconds),
                 now,
                 client_reference=client_reference.strip() if client_reference else None,
+                max_spend_wei=max_spend_wei,
             )
             await transaction.put_workload(workload, self.digest(token))
         access = GatewayAccess(
@@ -159,21 +184,47 @@ class WorkloadService:
             previous = await transaction.get_authorization(authorization_id)
             if previous is not None and previous.state_id != state.state_id:
                 return SignerDecision(False, 402, "workload_already_bound")
-            if previous is None:
-                stored = await transaction.put_authorization(
-                    PaymentAuthorization(
-                        authorization_id,
-                        workload.id,
-                        self.signer_id,
-                        state.state_id,
-                        state.sequence_number,
-                        state.orchestrator_address.lower(),
-                        maximum,
-                        now,
-                    )
-                )
-                if not stored:
+            if previous is not None and workload.max_spend_wei is None:
+                return SignerDecision(True, 200, auth_id=str(workload.id))
+            if previous is not None and state.sequence_number == previous.sequence_number:
+                if state.last_update_ns != previous.signer_last_update_ns:
                     return SignerDecision(False, 409, "authorization_conflict")
+                return SignerDecision(True, 200, auth_id=str(workload.id))
+            if previous is not None and state.sequence_number != previous.sequence_number + 1:
+                return SignerDecision(False, 409, "authorization_sequence_conflict")
+
+            authorized_fee = previous.authorized_fee if previous else 0
+            signer_last_update_ns = previous.signer_last_update_ns if previous else None
+            if workload.max_spend_wei is not None:
+                if previous is None and state.sequence_number != 0:
+                    return SignerDecision(False, 409, "authorization_sequence_conflict")
+                quantity = state.billable_quantity(signer_last_update_ns)
+                if quantity is None:
+                    return SignerDecision(False, 402, "spend_exposure_unavailable")
+                reservation = exact_cost(quantity, actual)
+                aggregates = await transaction.usage_aggregates((workload.id,))
+                attributed_fee = aggregates[0].computed_fee if aggregates else 0
+                if max(attributed_fee, authorized_fee) + reservation > workload.max_spend_wei:
+                    return SignerDecision(False, 402, "spend_ceiling_exceeded")
+                authorized_fee += reservation
+
+            stored = await transaction.put_authorization(
+                PaymentAuthorization(
+                    authorization_id,
+                    workload.id,
+                    self.signer_id,
+                    state.state_id,
+                    state.sequence_number,
+                    state.orchestrator_address.lower(),
+                    maximum,
+                    now,
+                    state.last_update_ns,
+                    authorized_fee,
+                )
+            )
+            if not stored:
+                return SignerDecision(False, 409, "authorization_conflict")
+            if previous is None:
                 await transaction.bind_workload(
                     workload.id,
                     state_id=state.state_id,

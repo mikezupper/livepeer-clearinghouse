@@ -91,8 +91,8 @@ Open `http://localhost:8080/` for users and `http://localhost:8080/admin/` for a
 | `CLEARINGHOUSE_ALLOWED_ORIGINS` | Comma-separated exact origins allowed for browser mutations |
 | `CLEARINGHOUSE_COOKIE_SECURE` | Must be `true` with HTTPS in production |
 | `CLEARINGHOUSE_ADMIN_EMAIL` | The email whose personal account receives admin access |
-| `CLEARINGHOUSE_AUTH_PEPPER` | Independent keyed-hash secret for OTPs and browser/API credentials |
-| `CLEARINGHOUSE_WORKLOAD_PEPPER` | Independent keyed-hash secret for workload access tokens |
+| `CLEARINGHOUSE_AUTH_PEPPER` | Independent keyed-hash secret for OTPs, browser sessions, and account API credentials |
+| `CLEARINGHOUSE_WORKLOAD_PEPPER` | Independent keyed-hash secret for credentials embedded in workload SDK tokens |
 | `CLEARINGHOUSE_SIGNER_WEBHOOK_SECRET` | Shared private credential for the signer callback |
 
 Production requires HTTPS, secure cookies, and at least 32-character non-placeholder peppers/secrets.
@@ -115,7 +115,7 @@ Email OTP is always available. Google and GitHub do not appear in the UI unless 
 
 ### Discovery and static orchestrators
 
-`CLEARINGHOUSE_DISCOVERY_URLS` names one or more comma-separated priced discovery endpoints. The Clearinghouse accepts only runner-and-price records from that boundary; it never bypasses signer filtering by querying orchestrators itself. A successful partial refresh replaces offers only for the orchestrators it reports and retains other orchestrators' last valid observations until their TTL. If the whole refresh is incomplete, the last safe snapshot remains usable for at most `CLEARINGHOUSE_DISCOVERY_TTL_SECONDS` (one hour by default). Any response containing retained observations is identified by `X-Clearinghouse-Discovery-Stale: true` and carries an HTTP `Warning: 110` header. With no safe snapshot, discovery returns `503`. Every generated Python SDK token pins the orchestrator service address from its selected offer.
+`CLEARINGHOUSE_DISCOVERY_URLS` names one or more comma-separated priced discovery endpoints. The Clearinghouse accepts only runner-and-price records from that boundary; it never bypasses signer filtering by querying orchestrators itself. A successful partial refresh replaces offers only for the orchestrators it reports and retains other orchestrators' last valid observations until their TTL. If the whole refresh is incomplete, the last safe snapshot remains usable for at most `CLEARINGHOUSE_DISCOVERY_TTL_SECONDS` (one hour by default). Any response containing retained observations is identified by `X-Clearinghouse-Discovery-Stale: true` and carries an HTTP `Warning: 110` header. With no safe snapshot, discovery returns `503`. Every generated workload SDK token pins the orchestrator service address from its selected offer.
 
 Collection APIs use opaque cursor pagination: 50 items by default, at most 200,
 with `next_cursor` continuation and no offset or embedded total count. The user
@@ -154,12 +154,26 @@ Set `ETH_RPC_URL`, `SIGNER_ETH_ADDR`, `SIGNER_KEYSTORE_HOST_FILE`, and `SIGNER_P
 1. Sign in by email code.
 2. Open Network to inspect advertised offers and exact rates.
 3. Open Cost estimator, select an offer, and enter the assumptions requested for its billing unit.
-4. Review the estimated quantity, cost, and offer expiry, then create a workload using an optional client/job reference.
-5. Save the one-time Python SDK token.
+4. Review the estimated quantity, cost, and offer expiry. Optionally enter an
+   immutable maximum spend in the currently selected Wei/ETH denomination,
+   then create a workload using an optional client/job reference.
+5. Save the returned-once workload SDK token.
 6. Pass it as the `LIVEPEER_GATEWAY_ACCESS_TOKEN` expected by [`livepeer-python-gateway`](https://github.com/livepeer/livepeer-python-gateway), or decode the documented payload to configure signer/discovery access directly.
-7. Inspect Usage & cost for measured quantity, quote-derived cost, and signer fee.
+7. Inspect Usage & cost for measured quantity, quote-derived cost,
+   signer-reported fee, pending authorized exposure, and remaining ceiling.
 
 The exact compatibility contract used by the local SDK checkout is documented in [contracts/sdk/livepeer-python-gateway-v1.md](contracts/sdk/livepeer-python-gateway-v1.md).
+
+### Credential scopes
+
+| Credential | Scope and use | Lifetime |
+| --- | --- | --- |
+| Account API credential (`och_live_…`) | Authenticate trusted automation to Clearinghouse control-plane APIs such as discovery, workload creation, usage inspection, and credential management. Never expose it to browser code or send it to a runner. | Long-lived until explicitly revoked; plaintext is returned once. |
+| Workload SDK token (base64-encoded JSON) | Configure `livepeer-python-gateway` signer and discovery access for exactly one quoted workload. It packages a workload-specific access credential and cannot administer the account or create another workload. | Ends when that workload expires or is revoked; the encoded token is returned once. |
+
+A trusted backend normally keeps one account API credential, uses it to create a
+quoted workload, and passes only the resulting workload SDK token to the gateway
+process executing that workload.
 
 ### Ad-hoc Python gateway qualification
 
@@ -206,7 +220,7 @@ explicit media/model inputs, and `QUALIFICATION_ALLOW_LV2V=true`. Missing live
 inventory is reported as not runnable, never as a pass.
 
 Sanitized plans, per-case evidence, and `report-latest.md` are written beneath
-`tmp/qualification/`; credentials and workload tokens are never included.
+`tmp/qualification/`; account API credentials and workload SDK tokens are never included.
 Executed workloads are revoked after evidence is collected. The operation
 fails closed on stale discovery unless `QUAL_ALLOW_STALE_DISCOVERY=true` is
 explicitly staged. Quote-derived cost is required to reconcile exactly with
